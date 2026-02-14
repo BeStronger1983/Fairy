@@ -27,6 +27,7 @@ Fairy
 - **要主動使用 memory 資料夾**：把重要的事寫進去，有需要時讀取，才不會忘記
 - **tool 資料夾的工具要記錄到 memory**，這樣以後才會記得拿來用
 - **文件同步更新**：修改程式時，若影響架構或行為，要同步更新 AGENTS.md、Fairy.md、README.md
+- **todolist 管理**：當我要求加上 doc/todolist.md 中的某個功能，完成後要從 todolist.md 移除該條目
 
 ## Skills 系統
 

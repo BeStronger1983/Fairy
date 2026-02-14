@@ -1,4 +1,6 @@
 import { Bot, InlineKeyboard } from 'grammy';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import type { ModelInfo } from '../ai/session.js';
@@ -13,6 +15,9 @@ const TELEGRAM_MSG_LIMIT = 4096;
 
 /** model 選擇 callback data 前綴 */
 const MODEL_CALLBACK_PREFIX = 'model:';
+
+/** todolist 檔案路徑 */
+const TODOLIST_PATH = resolve(PROJECT_ROOT, 'doc/todolist.md');
 
 /**
  * 建立 Telegram Bot，掛載權限 middleware 與 model 選擇流程
@@ -177,7 +182,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 }
 
 /**
- * 啟動 Bot 的 long polling，連線成功後發送 model 選擇按鈕
+ * 啟動 Bot 的 long polling，連線成功後先發送 todolist，再發送 model 選擇按鈕
  */
 export function startBot(bot: Bot, models: ModelInfo[]): void {
     bot.start({
@@ -189,12 +194,46 @@ export function startBot(bot: Bot, models: ModelInfo[]): void {
             // 標記 Bot 已啟動，開始發送 Telegram 通知
             markBotStarted();
 
+            // 先發送 todolist 待辦功能清單
+            await sendTodolist(bot);
+
+            // 再發送 model 選擇按鈕
             await sendModelSelection(bot, models);
         }
     });
 }
 
 // ---------- Internal helpers ----------
+
+/**
+ * 讀取並發送 todolist.md 給授權使用者
+ * 在選擇 model 前顯示待辦功能清單
+ */
+async function sendTodolist(bot: Bot): Promise<void> {
+    if (!existsSync(TODOLIST_PATH)) {
+        console.log('[Fairy] todolist.md not found, skipping');
+        return;
+    }
+
+    try {
+        const content = readFileSync(TODOLIST_PATH, 'utf-8');
+        
+        // 如果內容太長，只發送摘要
+        if (content.length > TELEGRAM_MSG_LIMIT - 100) {
+            await sendLongMessage(bot, authorizedUserId, `📋 **待辦功能清單**\n\n${content}`);
+        } else {
+            await bot.api.sendMessage(authorizedUserId, `📋 **待辦功能清單**\n\n${content}`, {
+                parse_mode: 'Markdown'
+            });
+        }
+        
+        console.log('[Fairy] Todolist sent to user');
+        writeLog('Todolist sent to user');
+    } catch (error) {
+        console.error('[Fairy] Failed to read todolist:', error);
+        // 不影響啟動流程，繼續執行
+    }
+}
 
 /**
  * 發送 model 選擇的 inline keyboard 按鈕給授權使用者
