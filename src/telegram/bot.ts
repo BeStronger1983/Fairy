@@ -87,6 +87,13 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         console.log(`[Fairy] Received from authorized user: ${userMessage}`);
         writeLog(`Received message: ${userMessage}`);
 
+        // 手動重啟指令
+        if (userMessage === '重啟' || userMessage === 'restart') {
+            await ctx.reply('收到！正在重新啟動…');
+            writeLog('Manual restart requested by user');
+            process.exit(RESTART_EXIT_CODE);
+        }
+
         try {
             // 在 AI 處理前建立檔案快照，用於事後比對變更
             const snapshotBefore = takeSnapshot(PROJECT_ROOT);
