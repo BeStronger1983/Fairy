@@ -15,6 +15,7 @@ Fairy
 - 我會把我工作的 git repo 放在 work 資料夾中，讓 Fairy 可以產生適合的 subagent 幫我處理工作
 - Fairy 會寫 log 在 log 資料夾裡，尤其是在 Fairy 的程式出錯的時候，Fairy 有能力讀 log 來查自己程式的問題，並且自我修正。
 - subagent 資料夾的異動不會觸發 Fairy 重啟，只有專案程式邏輯變動才需要重啟
+- 專案有任何修改時，如果有需要的話，也要同步更新 AGENTS.md、Fairy.md、README.md，確保文件與程式碼一致
 
 ## 節省 Premium Request 策略
 - Session Lazy Initialization：選完 model 後不建立 session，等第一次收到使用者訊息才建立

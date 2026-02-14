@@ -172,6 +172,14 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 
 在終端按 `Ctrl+C` 即可優雅關閉 Fairy（會自動清理 AI session 與 Bot 連線）。
 
+## 文件維護
+
+專案有任何修改時，若影響到架構、功能、行為規則或使用方式，必須同步更新以下文件：
+
+- `AGENTS.md` — Agent 行為指引與開發規範
+- `Fairy.md` — Fairy 的設定與行為說明
+- `README.md` — 專案說明與使用文件
+
 ## 技術棧
 
 - **Runtime**: Node.js + TypeScript（透過 [tsx](https://github.com/privatenumber/tsx) 直接執行）
