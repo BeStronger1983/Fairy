@@ -21,3 +21,9 @@ Fairy
 - Session Lazy Initialization：選完 model 後不建立 session，等第一次收到使用者訊息才建立
 - Subagent 重複利用：已建立的 subagent 設定存在 subagent 資料夾，相似任務可重複使用
 - Tool 快取：常用工具存在 tool 資料夾與 memory，避免重複撰寫
+
+## 重要工作習慣
+- **每次完成工作後，一定要 git commit 並 git push**，不要忘記！
+- **要主動使用 memory 資料夾**：把重要的事寫進去，有需要時讀取，才不會忘記
+- **tool 資料夾的工具要記錄到 memory**，這樣以後才會記得拿來用
+- **文件同步更新**：修改程式時，若影響架構或行為，要同步更新 AGENTS.md、Fairy.md、README.md
