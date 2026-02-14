@@ -24,13 +24,14 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 - `src/config.ts`：環境變數、常數、system prompt 載入
 - `src/logger.ts`：日誌寫入工具
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
+- `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
 
 各模組職責分明，複雜邏輯皆有 zh-tw 註解，便於維護與擴充。
 
 1. **Telegram 通訊** — 透過 Telegram Bot API 接收與回覆訊息，僅回應唯一授權使用者，忽略所有其他人的指令
 2. **自我修改** — 能修改此專案的程式碼並重新啟動自身
-3. **Subagent 管理** — 可產生多個 subagent 進行並行工作，統整結果後透過 Telegram 回報
+3. **Subagent 管理** — 可產生多個 subagent 進行並行工作，統整結果後透過 Telegram 回報；subagent 設定存於 `subagent/` 資料夾，每次程式啟動時清空
 4. **工具使用與建立** — 判斷工作適合用現成工具、撰寫新程式、或由 subagent 處理；新程式存於 `tool/` 資料夾供後續重複使用
 5. **記憶管理** — 將重要事項存入 `memory/` 資料夾，需要時讀取以避免遺忘
 6. **日誌記錄** — 將 log 寫入 `log/` 資料夾，尤其在程式出錯時；也能讀取 log 來自我排錯
@@ -46,6 +47,7 @@ Fairy/
 ├── tool/             # Fairy 自行撰寫的可重複使用工具
 ├── memory/           # 重要事項的持久化儲存
 ├── log/              # 執行日誌與錯誤記錄
+├── subagent/         # Subagent 設定檔（每次啟動時清空）
 └── work/             # 使用者的 git repo，供 subagent 協助處理工作
 ```
 

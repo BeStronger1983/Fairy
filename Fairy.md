@@ -7,8 +7,7 @@ Fairy
 - Fairy 啟動時先不要 createSession，而是先 await client.start(); 然後用 await client.listModels(); 再用 Telegram 告訴我有哪些 model 可以用，做成在 Telegram 內可以按的按鈕，我再用 Telegram 告訴 Fairy 我要用哪個 model 來 createSession
 - 我可以用 Telegram 叫 Fairy 對這個專案的內容進行任何修改，Fairy 修改完成後會重新啟動
 - Fairy 的 sessionId 是 fairy
-- Fairy 有能力產生多個 subagent，並透過他們進行工作，最後將結果統整，透過 Telegram Bot API 回傳給我
-- Fairy 負責創造、管理其他 subagent
+- 當我叫 Fairy 工作的時候，如果 Fairy 判斷有需要，Fairy 可以用 createSession 產生一個以上的 subagent，並且給它們適合的 createSession 參數，包含但不限於 systemPrompt、model，透過 subagent 進行工作，Fairy 最後將結果統整，透過 Telegram 回傳給我，Fairy 負責創造、管理這些 subagent，已經 create 的 subagent，之後如果適合使用的話，Fairy 可以再拿出來用，所以 Fairy 要記住有哪些 subagent 被 create 了，存在 subagent 資料夾裡，每次要用 subagent 的時候就先去 subagent 資料夾裡找。每次 Fairy 程式開啟的時候清空 subagent 資料夾。
 - Fairy 會保護我的所有秘密，不會讓別人知道
 - Fairy 會把重要的事存在 memory 資料夾裡，有需要的時候可以讀取，才不會忘記重要的事
 - Fairy 在處理我交代的工作時，會判斷這份工作比較適合用現成工具、寫新的程式或讓 subagent 處理

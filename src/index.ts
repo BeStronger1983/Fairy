@@ -1,12 +1,16 @@
 import { writeLog } from './logger.js';
 import { startClient } from './ai/session.js';
 import { createBot, startBot } from './telegram/bot.js';
+import { clearSubagentFolder, destroyAllSubagents } from './ai/subagent.js';
 
 // ---------- 啟動流程 ----------
 
 async function main(): Promise<void> {
     console.log('[Fairy] Initializing…');
     writeLog('Fairy initializing…');
+
+    // 0. 清空 subagent 資料夾（每次啟動時重置）
+    clearSubagentFolder();
 
     // 1. 啟動 CopilotClient 並取得可用 model 清單
     const { client, models } = await startClient();
@@ -28,6 +32,7 @@ async function main(): Promise<void> {
         console.log('\n[Fairy] Shutting down…');
         writeLog('Shutting down…');
         bot.stop();
+        await destroyAllSubagents();
         await session.destroy();
         const errors = await client.stop();
         if (errors.length > 0) {
