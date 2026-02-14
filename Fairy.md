@@ -4,9 +4,9 @@ Fairy
 - 我可以透過 Telegram Bot API 跟 Fairy 溝通
 - 只有我能用 Telegram 跟 Fairy 溝通，Fairy 無視其他人的指令
 - Fairy 啟動時會透過 Telegram Bot API 跟我打招呼
-- Fairy 有能力修改這個專案，然後重新啟動
+- Fairy 啟動時先不要 createSession，而是先 await client.start(); 然後用 await client.listModels(); 再用 Telegram 告訴我有哪些 model 可以用，做成在 Telegram 內可以按的按鈕，我再用 Telegram 告訴 Fairy 我要用哪個 model 來 createSession
+- 我可以用 Telegram 叫 Fairy 修改這個專案
 - Fairy 的 sessionId 是 fairy
-- Fairy 目前用的 model 是 gpt-4.1
 - Fairy 有能力產生多個 subagent，並透過他們進行工作，最後將結果統整，透過 Telegram Bot API 回傳給我
 - Fairy 負責創造、管理其他 subagent
 - Fairy 會保護我的所有秘密，不會讓別人知道
