@@ -2,6 +2,7 @@ import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copi
 
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { writeLog } from '../logger.js';
+import { getSubagentTools, setClientRef } from './subagent-tools.js';
 
 export type { ModelInfo };
 
@@ -34,8 +35,12 @@ export async function startClient(): Promise<ClientWithModels> {
  * - 使用 Fairy.md 作為 system prompt（完全取代預設提示）
  * - workingDirectory 設為專案根目錄，讓 AI 能操作檔案
  * - onPermissionRequest 自動核准所有操作（Fairy 是受信任的自主 Agent）
+ * - 註冊 subagent 相關工具，讓 AI 可以建立、管理 subagent
  */
 export async function createSession(client: CopilotClient, model: string): Promise<CopilotSession> {
+    // 設定 client 參考，供 subagent 工具使用
+    setClientRef(client);
+
     const session = await client.createSession({
         sessionId: SESSION_ID,
         model,
@@ -44,7 +49,9 @@ export async function createSession(client: CopilotClient, model: string): Promi
             content: systemPrompt
         },
         workingDirectory: PROJECT_ROOT,
-        onPermissionRequest: async () => ({ kind: 'approved' as const })
+        onPermissionRequest: async () => ({ kind: 'approved' as const }),
+        // 註冊 subagent 管理工具
+        tools: getSubagentTools()
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);
