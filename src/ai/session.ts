@@ -86,10 +86,10 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 void notifyError(`Session 錯誤：${JSON.stringify(event.data)}`);
                 break;
             case 'session.idle':
-                console.log('[Fairy] Session idle');
-                // 結束對話並顯示用量摘要（不再顯示「💤 Session idle」）
+                // 結束對話並顯示用量摘要（不顯示「Session idle」）
                 const usageSummary = endConversationAndGetSummary();
                 if (usageSummary) {
+                    console.log('[Fairy] Conversation ended, sending usage summary');
                     void notify(usageSummary);
                 }
                 break;
