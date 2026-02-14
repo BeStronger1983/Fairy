@@ -100,7 +100,8 @@ export class UsageTracker {
     constructor(model: string) {
         this._model = model;
         this._multiplier = getModelMultiplier(model);
-        writeLog(`UsageTracker initialized: model=${model}, multiplier=${this._multiplier}x`);
+        // 只在 console 輸出，不寫入 fairy.log
+        console.log(`[UsageTracker] Initialized: model=${model}, multiplier=${this._multiplier}x`);
     }
 
     /** 取得當前使用的 model */
@@ -144,8 +145,10 @@ export class UsageTracker {
         this._stats.sessionRequests++;
         this._stats.sessionTotal += this._multiplier;
 
-        writeLog(
-            `Request recorded: +${this._multiplier} premium requests ` +
+        // 只在 console 輸出請求記錄，不寫入 fairy.log
+        // 結構化的用量資訊由 bot.ts 用 writeRequestLog 寫入 request.log
+        console.log(
+            `[UsageTracker] Request: +${this._multiplier} premium requests ` +
                 `(conversation: ${this._currentConversation.premiumRequestsUsed}, ` +
                 `session: ${this._stats.sessionTotal})`
         );
@@ -170,8 +173,9 @@ export class UsageTracker {
         // 清除當前對話
         this._currentConversation = null;
 
-        writeLog(
-            `Conversation ended: ${completed.requestCount} requests, ` +
+        // 只在 console 輸出，不寫入 fairy.log
+        console.log(
+            `[UsageTracker] Conversation ended: ${completed.requestCount} requests, ` +
                 `${completed.premiumRequestsUsed} premium requests`
         );
 

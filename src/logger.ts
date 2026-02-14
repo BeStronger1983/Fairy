@@ -1,9 +1,10 @@
-import { appendFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { PROJECT_ROOT } from "./config.js";
 
 const LOG_DIR = resolve(PROJECT_ROOT, "log");
 const LOG_FILE = resolve(LOG_DIR, "fairy.log");
+const REQUEST_LOG_FILE = resolve(LOG_DIR, "request.log");
 
 // 確保 log 目錄存在
 mkdirSync(LOG_DIR, { recursive: true });
@@ -16,6 +17,13 @@ export interface RequestLogEntry {
   multiplier: number;
   subagentInfo?: { id: string; model: string; requests: number; premiumUsed: number }[];
   totalPremiumUsed: number;
+  durationMs?: number;
+}
+
+/** request.log 的整體結構 */
+interface RequestLogFile {
+  entries: RequestLogEntry[];
+  lastUpdated: string;
 }
 
 /**
@@ -28,12 +36,37 @@ export function writeLog(message: string): void {
 }
 
 /**
- * 寫入請求記錄到 log（結構化格式，方便解析）
+ * 讀取 request.log JSON 檔案
+ */
+function readRequestLogFile(): RequestLogFile {
+  if (!existsSync(REQUEST_LOG_FILE)) {
+    return { entries: [], lastUpdated: new Date().toISOString() };
+  }
+
+  try {
+    const content = readFileSync(REQUEST_LOG_FILE, 'utf-8');
+    return JSON.parse(content) as RequestLogFile;
+  } catch (error) {
+    // 檔案損壞或格式錯誤，重新建立
+    console.warn('[Logger] request.log 格式錯誤，重新建立');
+    return { entries: [], lastUpdated: new Date().toISOString() };
+  }
+}
+
+/**
+ * 寫入請求記錄到 log/request.log（JSON 格式）
  */
 export function writeRequestLog(entry: RequestLogEntry): void {
-  const timestamp = new Date().toISOString();
-  const logLine = `[${timestamp}] [REQUEST_LOG] ${JSON.stringify(entry)}\n`;
-  appendFileSync(LOG_FILE, logLine);
+  const logFile = readRequestLogFile();
+  logFile.entries.push(entry);
+  logFile.lastUpdated = new Date().toISOString();
+
+  // 只保留最近 100 筆記錄，避免檔案過大
+  if (logFile.entries.length > 100) {
+    logFile.entries = logFile.entries.slice(-100);
+  }
+
+  writeFileSync(REQUEST_LOG_FILE, JSON.stringify(logFile, null, 2));
 }
 
 /**
@@ -41,26 +74,13 @@ export function writeRequestLog(entry: RequestLogEntry): void {
  * @returns 最後一次請求的用量，或 null（找不到記錄）
  */
 export function getLastRequestUsage(): RequestLogEntry | null {
-  if (!existsSync(LOG_FILE)) {
+  const logFile = readRequestLogFile();
+
+  if (logFile.entries.length === 0) {
     return null;
   }
 
-  try {
-    const content = readFileSync(LOG_FILE, 'utf-8');
-    const lines = content.split('\n').reverse();
-
-    for (const line of lines) {
-      if (line.includes('[REQUEST_LOG]')) {
-        const jsonStart = line.indexOf('[REQUEST_LOG]') + '[REQUEST_LOG] '.length;
-        const jsonStr = line.slice(jsonStart);
-        return JSON.parse(jsonStr) as RequestLogEntry;
-      }
-    }
-  } catch (error) {
-    console.error('[Logger] Failed to read last request usage:', error);
-  }
-
-  return null;
+  return logFile.entries[logFile.entries.length - 1];
 }
 
 /**

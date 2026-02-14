@@ -66,9 +66,11 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
     });
 
     // -------- 全域錯誤處理 --------
-    bot.catch((err) => {
-        console.error('[Fairy] Bot error:', err.message);
-        writeLog(`Bot error: ${err.message}`);
+    bot.catch(async (err) => {
+        const errorMsg = `Bot error: ${err.message}`;
+        console.error(`[Fairy] ${errorMsg}`);
+        // 寫入 log 並發送 Telegram 通知
+        await notifyError(errorMsg);
     });
 
     // -------- Model 選擇 callback 處理 --------
