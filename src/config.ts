@@ -11,6 +11,9 @@ export const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..
 
 export const SESSION_ID = 'fairy';
 
+/** 用於觸發自動重啟的特殊 exit code（對應 start.sh） */
+export const RESTART_EXIT_CODE = 42;
+
 // ---------- Telegram ----------
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;

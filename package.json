@@ -4,7 +4,8 @@
   "description": "Fairy",
   "main": "index.js",
   "scripts": {
-    "start": "tsx src/index.ts",
+    "start": "bash start.sh",
+    "start:dev": "tsx src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

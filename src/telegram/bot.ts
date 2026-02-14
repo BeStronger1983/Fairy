@@ -3,7 +3,8 @@ import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import type { ModelInfo } from '../ai/session.js';
 import { createSession, verifySession } from '../ai/session.js';
-import { botToken, authorizedUserId } from '../config.js';
+import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
+import { takeSnapshot, detectChanges } from '../file-snapshot.js';
 import { writeLog } from '../logger.js';
 
 /** Telegram 單則訊息字數上限 */
@@ -87,7 +88,10 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         writeLog(`Received message: ${userMessage}`);
 
         try {
-            const aiResponse = await activeSession.sendAndWait({ prompt: userMessage }, 120_000);
+            // 在 AI 處理前建立檔案快照，用於事後比對變更
+            const snapshotBefore = takeSnapshot(PROJECT_ROOT);
+
+            const aiResponse = await activeSession.sendAndWait({ prompt: userMessage }, 300_000);
 
             if (aiResponse) {
                 const replyText = aiResponse.data.content;
@@ -96,6 +100,20 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             } else {
                 await ctx.reply('（無回應）');
                 writeLog('No response from AI core');
+            }
+
+            // AI 處理完畢後比對快照，偵測原始碼是否被修改
+            const snapshotAfter = takeSnapshot(PROJECT_ROOT);
+            const changedFiles = detectChanges(PROJECT_ROOT, snapshotBefore, snapshotAfter);
+
+            if (changedFiles.length > 0) {
+                const fileList = changedFiles.join('\n');
+                await bot.api.sendMessage(
+                    authorizedUserId,
+                    `偵測到以下檔案變更：\n${fileList}\n\n正在重新啟動…`
+                );
+                writeLog(`Files changed, restarting: ${changedFiles.join(', ')}`);
+                process.exit(RESTART_EXIT_CODE);
             }
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
