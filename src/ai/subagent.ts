@@ -4,6 +4,7 @@ import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import { PROJECT_ROOT } from '../config.js';
 import { writeLog } from '../logger.js';
+import { notify, notifyError } from '../notify.js';
 
 // ---------- 常數 ----------
 
@@ -53,7 +54,7 @@ function subscribeSessionErrors(session: CopilotSession, id: string): void {
     session.on((event) => {
         if (event.type === 'session.error') {
             console.error(`[Fairy] Subagent ${id} error:`, event.data);
-            writeLog(`Subagent ${id} error: ${JSON.stringify(event.data)}`);
+            void notifyError(`Subagent ${id} 錯誤：${JSON.stringify(event.data)}`);
         }
     });
 }
@@ -119,7 +120,7 @@ export function loadSubagentConfigs(): SubagentConfig[] {
             configs.push(JSON.parse(content) as SubagentConfig);
         } catch (error) {
             console.error(`[Fairy] Failed to load subagent config ${file}:`, error);
-            writeLog(`Failed to load subagent config ${file}: ${error}`);
+            await notifyError(`載入 subagent 設定失敗 ${file}: ${error}`);
         }
     }
 
@@ -172,6 +173,7 @@ export async function createSubagent(
 
     console.log(`[Fairy] Subagent created: ${id} (model: ${config.model})`);
     writeLog(`Subagent created: ${id} (model: ${config.model}, desc: ${config.description})`);
+    await notify(`Subagent 已建立：${config.description}（model: ${config.model}）`);
 
     return instance;
 }
@@ -245,7 +247,7 @@ export async function destroySubagent(id: string): Promise<void> {
         await instance.session.destroy();
         activeSubagents.delete(id);
         console.log(`[Fairy] Subagent destroyed: ${id}`);
-        writeLog(`Subagent destroyed: ${id}`);
+        await notify(`Subagent 已銷毀：${id}`);
     }
 }
 
@@ -258,5 +260,5 @@ export async function destroyAllSubagents(): Promise<void> {
         await destroySubagent(id);
     }
     console.log('[Fairy] All subagents destroyed');
-    writeLog('All subagents destroyed');
+    await notify('所有 subagent 已銷毀');
 }

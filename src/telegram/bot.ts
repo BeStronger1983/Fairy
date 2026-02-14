@@ -6,6 +6,7 @@ import { createSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
 import { writeLog } from '../logger.js';
+import { notify, notifyError, setBotRef, markBotStarted } from '../notify.js';
 
 /** Telegram 單則訊息字數上限 */
 const TELEGRAM_MSG_LIMIT = 4096;
@@ -27,6 +28,9 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
     sessionReady: Promise<CopilotSession>;
 } {
     const bot = new Bot(botToken);
+
+    // 設定 Bot 參考，供 notify 模組使用
+    setBotRef(bot);
 
     // 用 Promise 讓外部能等待 session 建立完成
     let resolveSession!: (session: CopilotSession) => void;
@@ -69,7 +73,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 
         selectedModel = data.slice(MODEL_CALLBACK_PREFIX.length);
         console.log(`[Fairy] User selected model: ${selectedModel}`);
-        writeLog(`User selected model: ${selectedModel}`);
+        await notify(`使用者選擇了 model：${selectedModel}`);
 
         // answerCallbackQuery 可能因 query 過期而失敗（例如啟動時撿到舊 update），需容錯
         try {
@@ -107,11 +111,11 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
                 activeSession = session;
                 resolveSession(session);
                 console.log('[Fairy] Session created on first message');
-                writeLog('Session created on first message (lazy initialization)');
+                await notify(`AI Session 已建立（model: ${selectedModel}）`);
             } catch (error) {
                 const errMsg = error instanceof Error ? error.message : String(error);
                 console.error('[Fairy] Failed to create session:', errMsg);
-                writeLog(`Failed to create session: ${errMsg}`);
+                await notifyError(`建立 session 失敗：${errMsg}`);
                 await ctx.reply(`建立 session 失敗：${errMsg}`);
                 isCreatingSession = false;
                 return;
@@ -126,12 +130,11 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 
         const userMessage = ctx.message.text;
         console.log(`[Fairy] Received from authorized user: ${userMessage}`);
-        writeLog(`Received message: ${userMessage}`);
 
         // 手動重啟指令
         if (userMessage === '重啟' || userMessage === 'restart') {
             await ctx.reply('收到！正在重新啟動…');
-            writeLog('Manual restart requested by user');
+            await notify('使用者要求手動重啟');
             process.exit(RESTART_EXIT_CODE);
         }
 
@@ -166,8 +169,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
             console.error('[Fairy] Error processing message:', errMsg);
-            writeLog(`Error processing message: ${errMsg}`);
-            await ctx.reply(`處理時發生錯誤：${errMsg}`);
+            await notifyError(`處理訊息時發生錯誤：${errMsg}`);
         }
     });
 
@@ -183,6 +185,9 @@ export function startBot(bot: Bot, models: ModelInfo[]): void {
         onStart: async (botInfo) => {
             console.log(`[Fairy] Telegram Bot @${botInfo.username} started`);
             writeLog(`Telegram Bot @${botInfo.username} started. Authorized user: ${authorizedUserId}`);
+
+            // 標記 Bot 已啟動，開始發送 Telegram 通知
+            markBotStarted();
 
             await sendModelSelection(bot, models);
         }

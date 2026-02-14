@@ -1,4 +1,4 @@
-import { writeLog } from './logger.js';
+import { notify, notifyError } from './notify.js';
 import { startClient } from './ai/session.js';
 import { createBot, startBot } from './telegram/bot.js';
 import { clearSubagentFolder, destroyAllSubagents } from './ai/subagent.js';
@@ -8,7 +8,7 @@ import { syncToolsWithMemory } from './tool-manager.js';
 
 async function main(): Promise<void> {
     console.log('[Fairy] Initializing…');
-    writeLog('Fairy initializing…');
+    await notify('Fairy 初始化中…');
 
     // 0. 清空 subagent 資料夾（每次啟動時重置）
     clearSubagentFolder();
@@ -29,12 +29,14 @@ async function main(): Promise<void> {
     // 這裡不再等待 sessionReady，讓程式保持運行
 
     console.log('[Fairy] Ready. Waiting for user to select model and send first message…');
-    writeLog('Fairy is ready. Session will be created on first message (lazy initialization).');
+
+    // 通知使用者程式已就緒（會在 Bot 連線成功後才實際發送）
+    await notify('Fairy 啟動完成，等待選擇 model 與第一則訊息');
 
     // 5. 優雅關閉：收到終止信號時依序釋放資源
     const shutdown = async (): Promise<void> => {
         console.log('\n[Fairy] Shutting down…');
-        writeLog('Shutting down…');
+        await notify('Fairy 正在關閉…');
         bot.stop();
         await destroyAllSubagents();
 
@@ -55,7 +57,7 @@ async function main(): Promise<void> {
         const errors = await client.stop();
         if (errors.length > 0) {
             console.error('[Fairy] Cleanup errors:', errors);
-            writeLog(`Cleanup errors: ${JSON.stringify(errors)}`);
+            await notifyError(`清理資源時發生錯誤：${JSON.stringify(errors)}`);
         }
         process.exit(0);
     };
@@ -64,8 +66,8 @@ async function main(): Promise<void> {
     process.on('SIGTERM', shutdown);
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
     console.error('[Fairy] Fatal error:', err);
-    writeLog(`Fatal error: ${err}`);
+    await notifyError(`致命錯誤：${err}`);
     process.exit(1);
 });

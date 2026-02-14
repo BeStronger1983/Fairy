@@ -23,6 +23,7 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 - `src/index.ts`：主程式入口，負責啟動流程與優雅關閉
 - `src/config.ts`：環境變數、常數、system prompt 載入
 - `src/logger.ts`：日誌寫入工具
+- `src/notify.ts`：通知模組，集中處理「寫 log + 發送 Telegram 通知」邏輯，讓使用者即時掌握重要執行狀況
 - `src/memory.ts`：記憶管理模組，負責重要事項的儲存、讀取、刪除與列表
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
 - `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent

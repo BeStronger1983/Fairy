@@ -1,7 +1,7 @@
 import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copilot-sdk';
 
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
-import { writeLog } from '../logger.js';
+import { notify, notifyError } from '../notify.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
 
@@ -21,11 +21,11 @@ export async function startClient(): Promise<ClientWithModels> {
     const client = new CopilotClient();
     await client.start();
     console.log('[Fairy] CopilotClient started');
-    writeLog('CopilotClient started');
+    await notify('CopilotClient 已啟動');
 
     const models = await client.listModels();
     console.log(`[Fairy] Available models: ${models.map((m) => m.id).join(', ')}`);
-    writeLog(`Available models: ${models.map((m) => m.id).join(', ')}`);
+    await notify(`可用 models：${models.map((m) => m.id).join(', ')}`);
 
     return { client, models };
 }
@@ -56,7 +56,7 @@ export async function createSession(client: CopilotClient, model: string): Promi
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);
-    writeLog(`Session "${SESSION_ID}" created with model ${model}`);
+    await notify(`Session「${SESSION_ID}」已建立，使用 model: ${model}`);
 
     // 訂閱 session 事件，方便監控與除錯
     session.on((event) => {
@@ -66,7 +66,7 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 break;
             case 'session.error':
                 console.error('[Fairy] Error:', event.data);
-                writeLog(`Error: ${JSON.stringify(event.data)}`);
+                void notifyError(`Session 錯誤：${JSON.stringify(event.data)}`);
                 break;
             case 'session.idle':
                 console.log('[Fairy] Session idle');
