@@ -13,18 +13,15 @@
 ### 兩者差異
 
 - **Copilot CLI subagent**：CLI 環境下的 agent，追蹤由 GitHub 管理
-- **Fairy Multiple Sessions**：Fairy Bot 內部的多 session 管理
+- **Fairy Multiple Sessions**：Fairy Bot 內部的多 session 管理，有 `request.log` 追蹤
 
-### ⚠️ 待修復問題
+### ✅ 用量追蹤（已實作）
 
-**Fairy Multiple Sessions 目前沒有追蹤 subagent 用量！**
-
-需要修改 `src/ai/subagent-tools.ts` 的 `send_to_subagent` 工具：
-1. 在呼叫 `sendAndWait` 前後追蹤用量
+Fairy Multiple Sessions 的 `send_to_subagent` 工具會：
+1. 追蹤每次 subagent 請求的用量
 2. 根據 subagent 的 model 計算正確的 multiplier
-3. 寫入 `request.log`
-
-這樣才能確保不管用哪種方式，都能給用戶正確的用量統計。
+3. 寫入 `request.log`（包含 subagentInfo）
+4. 回傳用量資訊給呼叫者
 
 ## Git 版本控制
 - ⚠️ **每次完成工作後，一定要 git commit 並 git push**

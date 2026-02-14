@@ -15,7 +15,8 @@ import {
     listActiveSubagents,
     type SubagentConfig
 } from './subagent.js';
-import { writeLog } from '../logger.js';
+import { writeLog, writeRequestLog } from '../logger.js';
+import { getModelMultiplier } from '../usage-tracker.js';
 
 // ---------- 工具參數型別定義 ----------
 
@@ -111,11 +112,13 @@ const createSubagentTool: Tool<CreateSubagentArgs> = {
  * 發送訊息給 subagent 工具
  *
  * 讓 AI 可以向指定的 subagent 發送訊息並取得回應
+ * 同時追蹤 subagent 的 premium request 用量
  */
 const sendToSubagentTool: Tool<SendToSubagentArgs> = {
     name: 'send_to_subagent',
     description: `向指定的 subagent 發送訊息並等待回應。
-如果 subagent session 已失效，會自動根據儲存的設定重新建立。`,
+如果 subagent session 已失效，會自動根據儲存的設定重新建立。
+用量會被追蹤並記錄到 request.log。`,
     parameters: {
         type: 'object',
         properties: {
@@ -146,15 +149,45 @@ const sendToSubagentTool: Tool<SendToSubagentArgs> = {
             }
 
             const timeout = args.timeoutMs ?? 60000;
+            const startTime = Date.now();
+            
+            // 取得 subagent 的 model multiplier
+            const subagentModel = instance.config.model;
+            const multiplier = getModelMultiplier(subagentModel);
+            
             const response = await instance.session.sendAndWait({ prompt: args.message }, timeout);
 
+            const durationMs = Date.now() - startTime;
             const content = response?.data.content ?? '（無回應）';
-            writeLog(`Tool send_to_subagent: ${args.subagentId} replied`);
+            
+            // 記錄 subagent 用量到 request.log
+            writeRequestLog({
+                timestamp: new Date().toISOString(),
+                userMessage: `[Subagent ${args.subagentId}] ${args.message.slice(0, 100)}`,
+                model: subagentModel,
+                multiplier,
+                subagentInfo: [{
+                    id: args.subagentId,
+                    model: subagentModel,
+                    requests: 1,
+                    premiumUsed: multiplier
+                }],
+                totalPremiumUsed: multiplier,
+                durationMs
+            });
+            
+            writeLog(`Tool send_to_subagent: ${args.subagentId} replied (${multiplier}x premium, ${durationMs}ms)`);
 
             return {
                 success: true,
                 subagentId: args.subagentId,
-                response: content
+                response: content,
+                usage: {
+                    model: subagentModel,
+                    multiplier,
+                    premiumUsed: multiplier,
+                    durationMs
+                }
             };
         } catch (error) {
             const errMsg = error instanceof Error ? error.message : String(error);
