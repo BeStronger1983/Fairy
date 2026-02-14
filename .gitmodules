@@ -1,3 +1,12 @@
 [submodule "reference/openclaw"]
 	path = reference/openclaw
 	url = git@github.com:openclaw/openclaw.git
+	ignore = all
+[submodule "reference/copilot-sdk"]
+	path = reference/copilot-sdk
+	url = git@github.com:github/copilot-sdk.git
+	ignore = all
+[submodule "reference/awesome-copilot"]
+	path = reference/awesome-copilot
+	url = git@github.com:github/awesome-copilot.git
+	ignore = all
