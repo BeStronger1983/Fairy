@@ -4,6 +4,7 @@ import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { notify, notifyError } from '../notify.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
+import { getSkillTools } from './skill-tools.js';
 
 export type { ModelInfo };
 
@@ -51,8 +52,8 @@ export async function createSession(client: CopilotClient, model: string): Promi
         },
         workingDirectory: PROJECT_ROOT,
         onPermissionRequest: async () => ({ kind: 'approved' as const }),
-        // 註冊自訂工具：subagent 管理 + tool 管理
-        tools: [...getSubagentTools(), ...getToolManagerTools()]
+        // 註冊自訂工具：subagent 管理 + tool 管理 + skill 管理
+        tools: [...getSubagentTools(), ...getToolManagerTools(), ...getSkillTools()]
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);

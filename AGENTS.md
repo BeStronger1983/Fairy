@@ -42,20 +42,29 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
    - 啟動時讀取記憶，確保不會遺忘重要事項
 6. **日誌記錄** — 將 log 寫入 `log/` 資料夾，尤其在程式出錯時；也能讀取 log 來自我排錯
 7. **Skills 系統** — 模組化的知識包，提供專業工作流程與領域知識。採用 Progressive Disclosure 設計：
-   - L1（metadata）：名稱+描述，永遠在 context 中（~100 字/skill）
+   - L1（metadata）：名稱+描述+關鍵字，永遠在 context 中（~100 字/skill）
    - L2（body）：完整 SKILL.md，觸發時才載入（<5000 字）
    - L3（resources）：scripts/references/assets，按需載入
+   - **整合 tool/**：tool 資料夾中的單檔工具自動成為 skills 的一部分（以 `tool:` 前綴識別）
+   - **智慧匹配**：根據用戶輸入的關鍵字自動推薦相關 skills
+   - **升級功能**：單檔工具可以升級為完整的 skill（有 SKILL.md + scripts/）
 
 ### 資料夾結構
 
 ```
 Fairy/
 ├── src/              # 原始碼
+│   └── ai/           # AI 相關模組
+│       ├── session.ts      # Session 管理
+│       ├── subagent.ts     # Subagent 管理
+│       ├── subagent-tools.ts # Subagent 工具
+│       ├── tool-tools.ts   # Tool 管理工具
+│       └── skill-tools.ts  # Skill 管理工具
 ├── .github/skills/   # Skills 定義（SKILL.md 格式）
 ├── Fairy.md          # Fairy 的設定與說明
 ├── AGENTS.md         # 本檔案：Agent 行為指引
 ├── package.json      # 依賴管理
-├── tool/             # Fairy 自行撰寫的可重複使用工具
+├── tool/             # Fairy 自行撰寫的可重複使用工具（自動整合到 Skills）
 ├── memory/           # 重要事項的持久化儲存
 ├── log/              # 執行日誌與錯誤記錄
 ├── subagent/         # Subagent 設定檔（每次啟動時清空，異動不觸發重啟）

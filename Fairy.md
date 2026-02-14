@@ -31,7 +31,10 @@ Fairy
 
 ## Skills 系統
 
-Fairy 使用 Skills 系統來擴展專業能力。Skills 存放於 `.github/skills/` 資料夾。
+Fairy 使用 Skills 系統來擴展專業能力。Skills 有兩個來源：
+
+1. **`.github/skills/`** — 完整的 skill 定義（有 SKILL.md + 可選的 scripts/references/assets）
+2. **`tool/`** — 單檔工具自動整合為 skill（以 `tool:` 前綴識別）
 
 ### Progressive Disclosure（漸進式揭露）
 
@@ -39,9 +42,17 @@ Skills 採用三層載入設計，有效節省 context window：
 
 | 層級 | 內容 | 載入時機 | 說明 |
 |------|------|----------|------|
-| L1 | 名稱 + 描述 | 永遠載入 | 用於判斷何時觸發 |
+| L1 | 名稱 + 描述 + 關鍵字 | 永遠載入 | 用於判斷何時觸發 |
 | L2 | SKILL.md body | 觸發時載入 | 詳細工作流程與指引 |
 | L3 | resources | 按需載入 | scripts/references/assets |
+
+### 智慧匹配
+
+Skills 系統可以根據用戶輸入的關鍵字自動推薦相關 skills：
+
+- `find_skills` 工具：根據查詢字串找出相關的 skills
+- `load_skill` 工具：載入完整的 skill 內容（L2 層級）
+- `upgrade_tool_to_skill` 工具：將單檔工具升級為完整 skill
 
 ### Skill 結構
 
@@ -59,3 +70,4 @@ Skills 採用三層載入設計，有效節省 context window：
 - **git-workflow**: Git 版本控制工作流程
 - **memory-manager**: 記憶管理
 - **tool-creator**: 工具開發
+- **tool:*** — tool/ 資料夾中的工具會自動以 `tool:` 前綴顯示
