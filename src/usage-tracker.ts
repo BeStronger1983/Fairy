@@ -5,51 +5,32 @@
  * 根據不同 model 的 multiplier 計算實際消耗
  */
 
+import type { ModelInfo } from '@github/copilot-sdk';
+
 import { writeLog } from './logger.js';
 
-// ---------- Model Multiplier 定義 ----------
+// ---------- Model Multiplier 快取 ----------
 
 /**
- * Model 到 Premium Request Multiplier 的對應表
- *
- * 來源：https://docs.github.com/en/copilot/managing-copilot/monitoring-usage-and-entitlements/about-premium-requests
- *
- * - 包含模型（GPT-5 mini, GPT-4.1, GPT-4o）：付費計劃免費，Free 計劃 1x
- * - 其他模型根據複雜度有不同倍率
- *
- * 注意：此表格需要定期更新以反映 GitHub 的最新定價
- * 最後更新：2026-02-14
+ * 動態的 Model Multiplier 對應表
+ * 從 listModels() API 取得，不再寫死
  */
-const MODEL_MULTIPLIERS: Record<string, number> = {
-    // 包含模型（付費計劃 0x，Free 計劃 1x）
-    'gpt-5-mini': 0,
-    'gpt-4.1': 0,
-    'gpt-4o': 0,
+let modelMultipliers: Record<string, number> = {};
 
-    // Claude 系列
-    'claude-opus-4.5': 3,
-    'claude-opus-4.6': 9, // fast mode preview
-    'claude-sonnet-4.5': 1,
-    'claude-sonnet-4': 1,
-    'claude-haiku-4.5': 0.25,
-
-    // GPT 系列（非包含）
-    'gpt-5': 1,
-    'gpt-5.1': 1,
-    'gpt-5.1-codex': 1,
-    'gpt-5.1-codex-mini': 0.5,
-    'gpt-5.1-codex-max': 2,
-    'gpt-5.2': 1,
-    'gpt-5.2-codex': 1,
-
-    // Gemini 系列
-    'gemini-3-pro-preview': 1,
-
-    // 其他（預設）
-    'o1': 3,
-    'o1-mini': 1,
-    'o3-mini': 1
-};
+/**
+ * 設定 model multiplier 快取
+ * 從 listModels() API 結果初始化
+ * @param models listModels() 回傳的 ModelInfo 陣列
+ */
+export function setModelMultipliers(models: ModelInfo[]): void {
+    modelMultipliers = {};
+    for (const model of models) {
+        // billing?.multiplier 是 API 提供的 multiplier
+        // 如果沒有 billing 資訊，預設為 1
+        modelMultipliers[model.id] = model.billing?.multiplier ?? 1;
+    }
+    writeLog(`Model multipliers initialized: ${JSON.stringify(modelMultipliers)}`);
+}
 
 /**
  * 取得 model 的 premium request multiplier
@@ -58,13 +39,13 @@ const MODEL_MULTIPLIERS: Record<string, number> = {
  */
 export function getModelMultiplier(modelId: string): number {
     // 先嘗試完全匹配
-    if (modelId in MODEL_MULTIPLIERS) {
-        return MODEL_MULTIPLIERS[modelId];
+    if (modelId in modelMultipliers) {
+        return modelMultipliers[modelId];
     }
 
     // 嘗試部分匹配（處理版本號等變體）
     const lowerModelId = modelId.toLowerCase();
-    for (const [key, value] of Object.entries(MODEL_MULTIPLIERS)) {
+    for (const [key, value] of Object.entries(modelMultipliers)) {
         if (lowerModelId.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerModelId)) {
             return value;
         }

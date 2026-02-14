@@ -4,22 +4,13 @@ import { createBot, startBot } from './telegram/bot.js';
 import { clearSubagentFolder, destroyAllSubagents } from './ai/subagent.js';
 import { syncToolsWithMemory } from './tool-manager.js';
 import { getMemoryManager, closeMemoryManager } from './memory/index.js';
-import { log, getLastRequestUsage } from './logger.js';
+import { log } from './logger.js';
 
 // ---------- 啟動流程 ----------
 
 async function main(): Promise<void> {
     console.log('[Fairy] Initializing…');
     await notify('Fairy 初始化中…');
-
-    // 0. 讀取上次請求的用量並通知
-    const lastUsage = getLastRequestUsage();
-    if (lastUsage) {
-        const usageMsg = `📊 上次請求用量：${lastUsage.totalPremiumUsed} premium requests\n` +
-            `• Model: ${lastUsage.model} (${lastUsage.multiplier}x)\n` +
-            `• 訊息: ${lastUsage.userMessage.slice(0, 50)}${lastUsage.userMessage.length > 50 ? '…' : ''}`;
-        await notify(usageMsg);
-    }
 
     // 1. 清空 subagent 資料夾（每次啟動時重置）
     clearSubagentFolder();

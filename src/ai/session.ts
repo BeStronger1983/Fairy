@@ -2,7 +2,7 @@ import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copi
 
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { notify, notifyError } from '../notify.js';
-import { initUsageTracker, endConversationAndGetSummary } from '../usage-tracker.js';
+import { initUsageTracker, endConversationAndGetSummary, setModelMultipliers } from '../usage-tracker.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
 import { getSkillTools } from './skill-tools.js';
@@ -21,6 +21,7 @@ export interface ClientWithModels {
  * 第一階段：啟動 CopilotClient 並取得可用 model 清單
  *
  * 尚不建立 session，等使用者透過 Telegram 選擇 model 後再建立
+ * 同時從 API 取得 model multiplier 並快取
  */
 export async function startClient(): Promise<ClientWithModels> {
     const client = new CopilotClient();
@@ -31,6 +32,9 @@ export async function startClient(): Promise<ClientWithModels> {
     const models = await client.listModels();
     console.log(`[Fairy] Available models: ${models.map((m) => m.id).join(', ')}`);
     await notify(`可用 models：${models.map((m) => m.id).join(', ')}`);
+
+    // 從 API 結果設定 model multiplier 快取
+    setModelMultipliers(models);
 
     return { client, models };
 }

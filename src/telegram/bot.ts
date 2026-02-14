@@ -7,7 +7,7 @@ import type { ModelInfo } from '../ai/session.js';
 import { createSession, getModelMultiplier as getMultiplierFromSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
-import { writeLog, writeRequestLog } from '../logger.js';
+import { writeLog, writeRequestLog, getLastRequestUsage } from '../logger.js';
 import { notify, notifyError, setBotRef, markBotStarted } from '../notify.js';
 import { recordRequest, getUsageTracker, getModelMultiplier } from '../usage-tracker.js';
 
@@ -88,15 +88,22 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             // callback query 過期，忽略
         }
 
+        // 讀取上次請求的消耗量
+        const lastUsage = getLastRequestUsage();
+        let usageInfo = '';
+        if (lastUsage) {
+            usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests`;
+        }
+
         try {
             await ctx.editMessageText(
                 `已選擇模型：${selectedModel} ✓\n\n` +
                 `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
-                `現在可以開始對話了！`
+                `現在可以開始對話了！${usageInfo}`
             );
         } catch {
             // 訊息已被編輯或刪除，改用直接發送
-            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！`);
+            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！${usageInfo}`);
         }
     });
 
