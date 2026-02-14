@@ -3,6 +3,8 @@ import { startClient } from './ai/session.js';
 import { createBot, startBot } from './telegram/bot.js';
 import { clearSubagentFolder, destroyAllSubagents } from './ai/subagent.js';
 import { syncToolsWithMemory } from './tool-manager.js';
+import { getMemoryManager, closeMemoryManager } from './memory/index.js';
+import { log } from './logger.js';
 
 // ---------- 啟動流程 ----------
 
@@ -15,6 +17,19 @@ async function main(): Promise<void> {
 
     // 0.5. 同步 tool 資料夾與 memory（確保工具都有記錄）
     syncToolsWithMemory();
+
+    // 0.6. 初始化向量記憶系統（有 OPENAI_API_KEY 時啟用）
+    if (process.env.OPENAI_API_KEY) {
+        try {
+            const memoryManager = getMemoryManager();
+            const syncResult = await memoryManager.sync();
+            log.info(`Memory system initialized: +${syncResult.added} ~${syncResult.updated} -${syncResult.removed}`);
+        } catch (err) {
+            log.warn(`Memory system init failed (will use legacy): ${err}`);
+        }
+    } else {
+        log.info('Memory system disabled (no OPENAI_API_KEY)');
+    }
 
     // 1. 啟動 CopilotClient 並取得可用 model 清單
     const { client, models } = await startClient();
@@ -39,6 +54,7 @@ async function main(): Promise<void> {
         await notify('Fairy 正在關閉…');
         bot.stop();
         await destroyAllSubagents();
+        closeMemoryManager();  // 關閉記憶系統
 
         // session 可能尚未建立（lazy initialization），需要檢查
         try {

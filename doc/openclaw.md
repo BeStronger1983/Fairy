@@ -23,7 +23,7 @@
 
 ## 值得加入 Fairy 的功能
 
-### 1. 🧠 Memory 系統 (高優先)
+### 1. 🧠 Memory 系統 (高優先) ✅ 已實作
 
 **來源**: `src/memory/`, `extensions/memory-core/`
 
@@ -32,23 +32,26 @@ OpenClaw 實作了完整的記憶系統，包含：
 - **Embedding 整合**: 支援 OpenAI、Gemini、Voyage 等多種 embedding provider
 - **Memory Tools**: `memory_search`, `memory_get` 等工具
 
-**適合 Fairy 的實作方式**:
-```typescript
-// memory/search-manager.ts 的核心模式
-interface MemoryEntry {
-  id: string;
-  content: string;
-  embedding: number[];
-  metadata: Record<string, unknown>;
-  createdAt: Date;
-}
+**Fairy 實作**:
+參考 OpenClaw 設計，實作於 `src/memory/`：
+- `types.ts` - 類型定義
+- `embedding-openai.ts` - OpenAI Embedding Provider
+- `store.ts` - SQLite 儲存 + 純 TypeScript 向量搜尋
+- `manager.ts` - Memory Manager（同步、搜尋）
+- `index.ts` - 公開 API
 
-// Fairy 可以簡化為 JSON 檔案 + 本地 embedding
+```typescript
+// 使用範例
+import { getMemoryManager } from './memory/index.js';
+
+const manager = getMemoryManager();
+await manager.sync();  // 同步 memory/, tool/ 資料夾
+
+const results = await manager.search('如何使用 API');
+// 返回語意最相關的記憶片段
 ```
 
-**建議**:
-- Fairy 目前用 memory 資料夾存純文字，可升級為結構化 JSON + embedding 搜尋
-- 可使用 `@anthropic-ai/sdk` 或 OpenAI embedding API
+**啟用條件**: 設定 `OPENAI_API_KEY` 環境變數
 
 ---
 
@@ -187,14 +190,14 @@ OpenClaw 的 session 設計：
 
 ## 實作優先順序建議
 
-| 優先級 | 功能 | 預估工作量 | 價值 |
-|--------|------|-----------|------|
-| 🔴 高 | Memory 系統升級 | 中 | 讓 Fairy 記住重要資訊 |
-| 🔴 高 | Skills 格式化 | 低 | 標準化 tool 管理 |
-| 🟡 中 | Routing 系統 | 中 | 多工作區支援 |
-| 🟡 中 | Hooks 系統 | 中 | 自動化觸發 |
-| 🟡 中 | Process 管理 | 中 | 長任務支援 |
-| 🟢 低 | Coding Agent 整合 | 高 | 外部工具協作 |
+| 優先級 | 功能 | 預估工作量 | 價值 | 狀態 |
+|--------|------|-----------|------|------|
+| 🔴 高 | Memory 系統升級 | 中 | 讓 Fairy 記住重要資訊 | ✅ 完成 |
+| 🔴 高 | Skills 格式化 | 低 | 標準化 tool 管理 | ⏳ 待做 |
+| 🟡 中 | Routing 系統 | 中 | 多工作區支援 | ⏳ 待做 |
+| 🟡 中 | Hooks 系統 | 中 | 自動化觸發 | ⏳ 待做 |
+| 🟡 中 | Process 管理 | 中 | 長任務支援 | ⏳ 待做 |
+| 🟢 低 | Coding Agent 整合 | 高 | 外部工具協作 | ⏳ 待做 |
 
 ---
 

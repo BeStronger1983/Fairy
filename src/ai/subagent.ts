@@ -120,7 +120,8 @@ export function loadSubagentConfigs(): SubagentConfig[] {
             configs.push(JSON.parse(content) as SubagentConfig);
         } catch (error) {
             console.error(`[Fairy] Failed to load subagent config ${file}:`, error);
-            await notifyError(`載入 subagent 設定失敗 ${file}: ${error}`);
+            // 這是同步函數，不能用 await，改用 .catch 忽略錯誤
+            notifyError(`載入 subagent 設定失敗 ${file}: ${error}`).catch(() => {});
         }
     }
 
