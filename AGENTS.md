@@ -90,3 +90,13 @@ Fairy/
 ## Code Simplification Requirement
 
 每次修改程式碼時，必須使用 code-simplifier skill（見 .github/skills/code-simplifier/SKILL.md）進行精簡與規範化，確保所有程式皆符合專案最佳實踐與維護性標準。
+
+## Self-Modification Commit Requirement
+
+每次 Fairy 修改自己的邏輯時，必須：
+
+1. 依照 `.github/prompts/commit.prompt.md` 的指示進行 git commit（使用 Conventional Commits 1.0.0 格式、繁體中文 commit message）
+2. Commit 所有相關的改動
+3. 執行 `git push` 推送至遠端
+
+這確保所有自我修改都有完整的版本控制記錄。
