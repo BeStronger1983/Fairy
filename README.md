@@ -117,7 +117,14 @@ npm start
 
 ```
 Fairy/
-├── index.ts          # 主程式入口
+├── src/
+│   ├── index.ts         # 入口，啟動流程與優雅關閉
+│   ├── config.ts        # 環境變數、常數、system prompt 載入
+│   ├── logger.ts        # 日誌工具
+│   ├── ai/
+│   │   └── session.ts   # AI 核心 session 建立與事件訂閱
+│   └── telegram/
+│       └── bot.ts       # Telegram Bot 建立、權限控制、訊息處理
 ├── Fairy.md          # Fairy 的人設與行為設定
 ├── AGENTS.md         # Agent 開發指引
 ├── package.json      # 依賴管理
@@ -136,6 +143,18 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 3. 只有授權使用者的訊息會被轉發到 AI 核心處理
 
 這代表即使有人找到你的 Bot 並傳送訊息，Fairy 也不會有任何反應。
+
+## 原始碼模組化說明
+
+自 2026/02/14 起，Fairy 採用 src/ 目錄下多檔案模組化設計：
+
+- `src/index.ts`：主程式入口，負責啟動流程與優雅關閉
+- `src/config.ts`：環境變數、常數、system prompt 載入
+- `src/logger.ts`：日誌寫入工具
+- `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
+- `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
+
+各模組職責分明，複雜邏輯皆有 zh-tw 註解，便於維護與擴充。
 
 ## 日誌
 
