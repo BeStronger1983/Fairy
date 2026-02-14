@@ -50,9 +50,33 @@ async function runNpmInstall() {
 }
 
 /**
+ * 更新 git submodules（保持最新狀態）
+ */
+async function updateGitSubmodules() {
+    console.log('[Fairy] 更新 git submodules…');
+    const isWindows = process.platform === 'win32';
+    const git = isWindows ? 'git.exe' : 'git';
+    
+    // 先初始化（確保 submodule 存在）
+    await runCommand(git, ['submodule', 'update', '--init', '--recursive']);
+    
+    // 拉取最新版本
+    const exitCode = await runCommand(git, ['submodule', 'foreach', '--recursive', 'git pull origin HEAD']);
+    
+    if (exitCode === 0) {
+        console.log('[Fairy] Git submodules 已更新至最新');
+    } else {
+        console.warn('[Fairy] Git submodules 更新時發生問題（可能沒有 submodule 或網路問題）');
+    }
+}
+
+/**
  * 主程式：執行 Fairy，監控 exit code 並自動重啟
  */
 async function main() {
+    // 啟動時更新 git submodules
+    await updateGitSubmodules();
+    
     while (true) {
         // 使用 npx tsx 執行 TypeScript
         const isWindows = process.platform === 'win32';
@@ -63,6 +87,7 @@ async function main() {
         if (exitCode === RESTART_CODE) {
             console.log('[Fairy] 偵測到程式碼變更，正在重新啟動…');
             await runNpmInstall();
+            await updateGitSubmodules();  // 重啟時也更新 submodules
             await sleep(1000);
             continue;
         }

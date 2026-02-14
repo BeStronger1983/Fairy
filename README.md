@@ -160,6 +160,10 @@ npm start
 
 這會執行 `start.js`，自動偵測作業系統並使用對應的方式啟動。
 
+**啟動時會自動：**
+- 更新所有 git submodules 到最新版本
+- 重啟時也會自動更新 submodules
+
 ### 平台專屬啟動
 
 #### macOS / Linux
