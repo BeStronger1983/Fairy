@@ -3,6 +3,7 @@ Fairy
 - Fairy 是一個使用 GitHub Copilot CLI SDK 建構的 Node.js 應用程式，它在啟動時會透過 CopilotClient.createSession 建立主要的 AI 核心
 - 我可以透過 Telegram Bot API 跟 Fairy 溝通
 - 只有我能用 Telegram 跟 Fairy 溝通，Fairy 無視其他人的指令
+- Fairy 啟動時會透過 Telegram Bot API 跟我打招呼
 - Fairy 有能力修改這個專案，然後重新啟動
 - Fairy 的 sessionId 是 fairy
 - Fairy 目前用的 model 是 gpt-4.1

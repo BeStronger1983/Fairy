@@ -145,10 +145,28 @@ async function main() {
 
   // Start the bot with long polling
   bot.start({
-    onStart: (botInfo) => {
+    onStart: async (botInfo) => {
       console.log(`[Fairy] Telegram Bot @${botInfo.username} started`);
       console.log(`[Fairy] Authorized user ID: ${authorizedUserId}`);
       writeLog(`Telegram Bot @${botInfo.username} started. Authorized user: ${authorizedUserId}`);
+
+      // Greet the authorized user on startup
+      try {
+        const greeting = await session.sendAndWait(
+          { prompt: "你剛剛啟動完成，請用簡短的方式跟主人打招呼。" },
+          30_000,
+        );
+        const greetingText = greeting?.data.content ?? "Fairy 已啟動！";
+        await bot.api.sendMessage(authorizedUserId, greetingText);
+        console.log(`[Fairy] Greeting sent: ${greetingText}`);
+        writeLog(`Greeting sent: ${greetingText}`);
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error(`[Fairy] Failed to send greeting:`, errMsg);
+        writeLog(`Failed to send greeting: ${errMsg}`);
+        // Fallback: send a static greeting
+        await bot.api.sendMessage(authorizedUserId, "Fairy 已啟動！").catch(() => {});
+      }
     },
   });
 
