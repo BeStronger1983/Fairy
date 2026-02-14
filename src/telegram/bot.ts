@@ -9,6 +9,7 @@ import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
 import { writeLog } from '../logger.js';
 import { notify, notifyError, setBotRef, markBotStarted } from '../notify.js';
+import { recordRequest } from '../usage-tracker.js';
 
 /** Telegram 單則訊息字數上限 */
 const TELEGRAM_MSG_LIMIT = 4096;
@@ -146,6 +147,9 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         try {
             // 在 AI 處理前建立檔案快照，用於事後比對變更
             const snapshotBefore = takeSnapshot(PROJECT_ROOT);
+
+            // 記錄 premium request 使用
+            recordRequest();
 
             const aiResponse = await activeSession.sendAndWait({ prompt: userMessage }, 300_000);
 

@@ -21,6 +21,20 @@ Fairy
 - Session Lazy Initialization：選完 model 後不建立 session，等第一次收到使用者訊息才建立
 - Subagent 重複利用：已建立的 subagent 設定存在 subagent 資料夾，相似任務可重複使用
 - Tool 快取：常用工具存在 tool 資料夾與 memory，避免重複撰寫
+- **用量追蹤**：每次 session idle 時顯示 premium request 消耗，幫助了解資源使用
+
+## Premium Request 用量追蹤
+
+Fairy 會追蹤每次對話的 premium request 消耗：
+
+- **Model Multiplier**：不同 model 有不同的倍率（如 Claude Opus 4.5 是 3x，GPT-4.1 是 0x）
+- **Session Idle 通知**：每次對話結束（session idle）時，會顯示用量摘要
+- **摘要內容**：
+  - Model 名稱與 multiplier
+  - 請求次數
+  - Premium request 消耗
+  - 對話時長
+  - Session 累計用量
 
 ## 重要工作習慣
 - **每次完成工作後，一定要 git commit 並 git push**，不要忘記！

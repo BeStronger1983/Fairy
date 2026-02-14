@@ -2,6 +2,7 @@ import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copi
 
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { notify, notifyError } from '../notify.js';
+import { initUsageTracker, endConversationAndGetSummary } from '../usage-tracker.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
 import { getSkillTools } from './skill-tools.js';
@@ -43,6 +44,10 @@ export async function createSession(client: CopilotClient, model: string): Promi
     // 設定 client 參考，供 subagent 工具使用
     setClientRef(client);
 
+    // 初始化 usage tracker
+    const usageTracker = initUsageTracker(model);
+    console.log(`[Fairy] UsageTracker initialized: ${model} (${usageTracker.multiplier}x)`);
+
     const session = await client.createSession({
         sessionId: SESSION_ID,
         model,
@@ -57,7 +62,7 @@ export async function createSession(client: CopilotClient, model: string): Promi
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);
-    await notify(`Session「${SESSION_ID}」已建立，使用 model: ${model}`);
+    await notify(`Session「${SESSION_ID}」已建立，使用 model: ${model} (${usageTracker.multiplier}x)`);
 
     // 訂閱 session 事件，方便監控與除錯
     session.on((event) => {
@@ -75,7 +80,13 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 break;
             case 'session.idle':
                 console.log('[Fairy] Session idle');
-                void notify('💤 Session idle');
+                // 結束對話並顯示用量摘要
+                const usageSummary = endConversationAndGetSummary();
+                if (usageSummary) {
+                    void notify(`💤 Session idle\n\n${usageSummary}`);
+                } else {
+                    void notify('💤 Session idle');
+                }
                 break;
         }
     });

@@ -20,6 +20,7 @@ Fairy 是一個自主 AI Agent，使用 [GitHub Copilot CLI SDK](https://www.npm
 - **記憶持久化** — 重要事項存入 `memory/`，不會遺忘
 - **日誌記錄** — 執行日誌與錯誤記錄寫入 `log/`
 - **Skills 系統** — 模組化的知識包，整合 `.github/skills/` 與 `tool/`，支援智慧匹配
+- **Premium Request 用量追蹤** — 追蹤每次對話的 premium request 消耗，session idle 時顯示用量
 - **跨平台支援** — 可在 macOS、Linux、Windows 上執行
 
 
@@ -248,6 +249,7 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 - `src/config.ts`：環境變數、常數、system prompt 載入
 - `src/logger.ts`：日誌寫入工具
 - `src/skills.ts`：Skills 系統，實作 Progressive Disclosure 三層載入與智慧匹配
+- `src/usage-tracker.ts`：Premium Request 用量追蹤
 - `src/file-snapshot.ts`：檔案快照與變更偵測，用於判斷是否需要重啟
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
 - `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
@@ -265,6 +267,7 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 - 收到的訊息與回覆摘要
 - 被拒絕的未授權訊息紀錄
 - 錯誤訊息
+- Premium request 用量記錄
 
 ## 停止
 

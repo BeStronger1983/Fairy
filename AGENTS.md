@@ -26,6 +26,7 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 - `src/notify.ts`：通知模組，集中處理「寫 log + 發送 Telegram 通知」邏輯，讓使用者即時掌握重要執行狀況
 - `src/memory.ts`：記憶管理模組，負責重要事項的儲存、讀取、刪除與列表
 - `src/skills.ts`：Skills 系統模組，實作 Progressive Disclosure 三層載入
+- `src/usage-tracker.ts`：Premium Request 用量追蹤模組，記錄每次對話的消耗
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
 - `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
@@ -48,6 +49,7 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
    - **整合 tool/**：tool 資料夾中的單檔工具自動成為 skills 的一部分（以 `tool:` 前綴識別）
    - **智慧匹配**：根據用戶輸入的關鍵字自動推薦相關 skills
    - **升級功能**：單檔工具可以升級為完整的 skill（有 SKILL.md + scripts/）
+8. **Premium Request 用量追蹤** — 追蹤每次對話的 premium request 消耗，在 session idle 時通知用量摘要。根據不同 model 的 multiplier 計算（如 Claude Opus 4.5 是 3x）
 
 ### 資料夾結構
 
