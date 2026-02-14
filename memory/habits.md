@@ -16,5 +16,11 @@
   - Fairy.md
   - README.md
 
+## Skills 系統
+- Skills 存放於 `.github/skills/` 資料夾
+- 採用 Progressive Disclosure：L1(metadata) → L2(body) → L3(resources)
+- 新增 Skill 時，要更新 Fairy.md 的「目前可用 Skills」清單
+
 ---
 建立日期：2026-02-14
+最後更新：2026-02-14

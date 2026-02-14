@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateSkillsSummary } from './skills.js';
 
 // ---------- 路徑 ----------
 
@@ -38,4 +39,11 @@ export const authorizedUserId = Number(TELEGRAM_AUTHORIZED_USER_ID);
  * 從 Fairy.md 載入系統提示詞
  * 這個檔案定義了 Fairy 的人格與行為準則
  */
-export const systemPrompt: string = readFileSync(resolve(PROJECT_ROOT, 'Fairy.md'), 'utf-8');
+const baseSytemPrompt: string = readFileSync(resolve(PROJECT_ROOT, 'Fairy.md'), 'utf-8');
+
+/**
+ * 完整的 system prompt，包含：
+ * - 基礎人格設定（Fairy.md）
+ * - Skills 摘要（L1：名稱 + 描述）
+ */
+export const systemPrompt: string = [baseSytemPrompt, '', generateSkillsSummary()].filter(Boolean).join('\n');

@@ -21,10 +21,11 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 自 2026/02/14 起，Fairy 採用 src/ 目錄下多檔案模組化設計：
 
 - `src/index.ts`：主程式入口，負責啟動流程與優雅關閉
-- `src/config.ts`：環境變數、常數、system prompt 載入
+- `src/config.ts`：環境變數、常數、system prompt 載入（含 Skills 摘要）
 - `src/logger.ts`：日誌寫入工具
 - `src/notify.ts`：通知模組，集中處理「寫 log + 發送 Telegram 通知」邏輯，讓使用者即時掌握重要執行狀況
 - `src/memory.ts`：記憶管理模組，負責重要事項的儲存、讀取、刪除與列表
+- `src/skills.ts`：Skills 系統模組，實作 Progressive Disclosure 三層載入
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
 - `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
@@ -40,12 +41,17 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
    - 記錄重要的工作習慣與提醒
    - 啟動時讀取記憶，確保不會遺忘重要事項
 6. **日誌記錄** — 將 log 寫入 `log/` 資料夾，尤其在程式出錯時；也能讀取 log 來自我排錯
+7. **Skills 系統** — 模組化的知識包，提供專業工作流程與領域知識。採用 Progressive Disclosure 設計：
+   - L1（metadata）：名稱+描述，永遠在 context 中（~100 字/skill）
+   - L2（body）：完整 SKILL.md，觸發時才載入（<5000 字）
+   - L3（resources）：scripts/references/assets，按需載入
 
 ### 資料夾結構
 
 ```
 Fairy/
-├── index.ts          # 主程式入口
+├── src/              # 原始碼
+├── .github/skills/   # Skills 定義（SKILL.md 格式）
 ├── Fairy.md          # Fairy 的設定與說明
 ├── AGENTS.md         # 本檔案：Agent 行為指引
 ├── package.json      # 依賴管理

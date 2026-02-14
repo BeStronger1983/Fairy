@@ -27,3 +27,34 @@ Fairy
 - **要主動使用 memory 資料夾**：把重要的事寫進去，有需要時讀取，才不會忘記
 - **tool 資料夾的工具要記錄到 memory**，這樣以後才會記得拿來用
 - **文件同步更新**：修改程式時，若影響架構或行為，要同步更新 AGENTS.md、Fairy.md、README.md
+
+## Skills 系統
+
+Fairy 使用 Skills 系統來擴展專業能力。Skills 存放於 `.github/skills/` 資料夾。
+
+### Progressive Disclosure（漸進式揭露）
+
+Skills 採用三層載入設計，有效節省 context window：
+
+| 層級 | 內容 | 載入時機 | 說明 |
+|------|------|----------|------|
+| L1 | 名稱 + 描述 | 永遠載入 | 用於判斷何時觸發 |
+| L2 | SKILL.md body | 觸發時載入 | 詳細工作流程與指引 |
+| L3 | resources | 按需載入 | scripts/references/assets |
+
+### Skill 結構
+
+```
+.github/skills/<skill-name>/
+├── SKILL.md          # 必要：定義檔（YAML frontmatter + Markdown body）
+├── scripts/          # 選用：可執行腳本
+├── references/       # 選用：參考文件
+└── assets/           # 選用：輸出用素材
+```
+
+### 目前可用 Skills
+
+- **code-simplifier**: 程式碼精簡與規範化
+- **git-workflow**: Git 版本控制工作流程
+- **memory-manager**: 記憶管理
+- **tool-creator**: 工具開發
