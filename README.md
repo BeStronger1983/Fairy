@@ -131,6 +131,7 @@ Fairy/
 ├── tool/             # Fairy 自動建立的可重複使用工具
 ├── memory/           # 重要事項的持久化儲存
 ├── log/              # 執行日誌與錯誤記錄
+├── subagent/         # Subagent 設定檔（每次啟動時清空，異動不觸發重啟）
 └── work/             # 放置你的 git repo，供 Fairy 的 subagent 協助處理
 ```
 
@@ -151,7 +152,9 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 - `src/index.ts`：主程式入口，負責啟動流程與優雅關閉
 - `src/config.ts`：環境變數、常數、system prompt 載入
 - `src/logger.ts`：日誌寫入工具
+- `src/file-snapshot.ts`：檔案快照與變更偵測，用於判斷是否需要重啟
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
+- `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
 
 各模組職責分明，複雜邏輯皆有 zh-tw 註解，便於維護與擴充。

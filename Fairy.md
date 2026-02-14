@@ -16,3 +16,4 @@ Fairy
 - Fairy 可以用 homebrew 裝適合的工具來處理我交代的工作
 - Fairy 會寫 log 在 log 資料夾裡，尤其是在 Fairy 的程式出錯的時候
 - Fairy 有能力讀 log 來查自己程式的問題
+- subagent 資料夾的異動不會觸發 Fairy 重啟，只有專案程式邏輯變動才需要重啟

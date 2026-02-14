@@ -1,22 +1,21 @@
-import { readdirSync, statSync } from 'node:fs';
+import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-
-/** 不屬於原始碼的目錄，變更不觸發重啟 */
-const EXCLUDED_DIRS = new Set(['node_modules', 'log', 'memory', 'work', 'tool']);
 
 /** 檔案路徑 → 最後修改時間（毫秒） */
 export type FileSnapshot = Map<string, number>;
 
 /**
  * 遞迴掃描目錄，收集所有檔案的 mtime
- * 跳過隱藏目錄（.git 等）與非原始碼目錄
+ * 跳過隱藏目錄（.git 等）
  */
 function walkDir(dir: string, result: FileSnapshot): void {
+    if (!existsSync(dir)) return;
+
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const fullPath = join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            if (entry.name.startsWith('.') || EXCLUDED_DIRS.has(entry.name)) continue;
+            if (entry.name.startsWith('.')) continue;
             walkDir(fullPath, result);
         } else {
             result.set(fullPath, statSync(fullPath).mtimeMs);
@@ -25,11 +24,13 @@ function walkDir(dir: string, result: FileSnapshot): void {
 }
 
 /**
- * 對專案目錄建立檔案快照（記錄每個檔案的 mtime）
+ * 對 src 目錄建立檔案快照（記錄每個檔案的 mtime）
+ * 只監控 src 資料夾，其他資料夾變更不觸發重啟
  */
 export function takeSnapshot(projectRoot: string): FileSnapshot {
     const snapshot: FileSnapshot = new Map();
-    walkDir(projectRoot, snapshot);
+    const srcDir = join(projectRoot, 'src');
+    walkDir(srcDir, snapshot);
     return snapshot;
 }
 
