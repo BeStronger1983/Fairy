@@ -62,7 +62,11 @@ export async function createSession(client: CopilotClient, model: string): Promi
     session.on((event) => {
         switch (event.type) {
             case 'assistant.message':
-                console.log(`[Fairy] Assistant: ${event.data.content}`);
+                // 只在有內容時才輸出與通知
+                if (event.data.content && event.data.content.trim()) {
+                    console.log(`[Fairy] Assistant: ${event.data.content}`);
+                    void notify(`🤖 ${event.data.content}`);
+                }
                 break;
             case 'session.error':
                 console.error('[Fairy] Error:', event.data);
@@ -70,6 +74,7 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 break;
             case 'session.idle':
                 console.log('[Fairy] Session idle');
+                void notify('💤 Session idle');
                 break;
         }
     });
