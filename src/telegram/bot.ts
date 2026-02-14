@@ -7,7 +7,7 @@ import type { ModelInfo } from '../ai/session.js';
 import { createSession, getModelMultiplier as getMultiplierFromSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
-import { writeLog, writeRequestLog, getLastRequestUsage } from '../logger.js';
+import { writeLog, writeRequestLog, getUsageSummary } from '../logger.js';
 import { notify, notifyError, setBotRef, markBotStarted } from '../notify.js';
 import { recordRequest, getUsageTracker, getModelMultiplier } from '../usage-tracker.js';
 
@@ -90,11 +90,11 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             // callback query 過期，忽略
         }
 
-        // 讀取上次請求的消耗量
-        const lastUsage = getLastRequestUsage();
+        // 讀取累計用量資訊
+        const summary = getUsageSummary();
         let usageInfo = '';
-        if (lastUsage) {
-            usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests (${lastUsage.model})`;
+        if (summary.totalPremiumUsed > 0) {
+            usageInfo = `\n\n📊 累計消耗：${summary.totalPremiumUsed} premium requests (${summary.totalRequests} 次請求)`;
         }
 
         const messageText = 
@@ -157,6 +157,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         try {
             // 在 AI 處理前建立檔案快照，用於事後比對變更
             const snapshotBefore = takeSnapshot(PROJECT_ROOT);
+            const requestStartTime = Date.now();
 
             // 記錄 premium request 使用
             recordRequest();
@@ -166,6 +167,9 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 
             const aiResponse = await activeSession.sendAndWait({ prompt: userMessage }, 300_000);
 
+            // 計算處理時間
+            const durationMs = Date.now() - requestStartTime;
+
             // 取得用量追蹤器，準備寫入結構化 log
             const tracker = getUsageTracker();
             if (tracker) {
@@ -173,10 +177,11 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
                 if (usage) {
                     writeRequestLog({
                         timestamp: new Date().toISOString(),
-                        userMessage,
+                        userMessage: userMessage.slice(0, 200),  // 限制長度避免 log 過大
                         model: tracker.model,
                         multiplier: tracker.multiplier,
-                        totalPremiumUsed: usage.premiumRequestsUsed
+                        totalPremiumUsed: usage.premiumRequestsUsed,
+                        durationMs
                     });
                 }
             }
@@ -270,7 +275,7 @@ async function sendTodolist(bot: Bot): Promise<void> {
 /**
  * 發送 model 選擇的 inline keyboard 按鈕給授權使用者
  * 每個按鈕顯示 model 名稱與 premium request multiplier
- * 同時顯示上次請求的消耗量（如果有的話）
+ * 同時顯示累計用量（如果有的話）
  */
 async function sendModelSelection(bot: Bot, models: ModelInfo[]): Promise<void> {
     const keyboard = new InlineKeyboard();
@@ -287,11 +292,11 @@ async function sendModelSelection(bot: Bot, models: ModelInfo[]): Promise<void> 
         return `• ${m.name} (${m.id}) - ${mult}x`;
     }).join('\n');
 
-    // 讀取上次請求的消耗量
-    const lastUsage = getLastRequestUsage();
+    // 讀取累計用量資訊
+    const summary = getUsageSummary();
     let usageInfo = '';
-    if (lastUsage) {
-        usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests (${lastUsage.model})`;
+    if (summary.totalPremiumUsed > 0) {
+        usageInfo = `\n\n📊 累計消耗：${summary.totalPremiumUsed} premium requests (${summary.totalRequests} 次請求)`;
     }
 
     await bot.api.sendMessage(authorizedUserId, `Fairy 已啟動！請選擇要使用的 AI model：\n\n${modelList}${usageInfo}`, {

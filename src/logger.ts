@@ -84,6 +84,35 @@ export function getLastRequestUsage(): RequestLogEntry | null {
 }
 
 /**
+ * 計算所有請求的 premium requests 總量
+ * @returns 總 premium requests 數量
+ */
+export function getTotalPremiumUsed(): number {
+  const logFile = readRequestLogFile();
+  return logFile.entries.reduce((sum, entry) => sum + entry.totalPremiumUsed, 0);
+}
+
+/**
+ * 取得用量摘要資訊（用於 Telegram 報告）
+ * @returns 格式化的用量摘要
+ */
+export function getUsageSummary(): {
+  totalRequests: number;
+  totalPremiumUsed: number;
+  lastEntry: RequestLogEntry | null;
+} {
+  const logFile = readRequestLogFile();
+  const totalPremiumUsed = logFile.entries.reduce((sum, entry) => sum + entry.totalPremiumUsed, 0);
+  const lastEntry = logFile.entries.length > 0 ? logFile.entries[logFile.entries.length - 1] : null;
+  
+  return {
+    totalRequests: logFile.entries.length,
+    totalPremiumUsed,
+    lastEntry
+  };
+}
+
+/**
  * 結構化 Logger
  */
 export const log = {

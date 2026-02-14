@@ -2,6 +2,7 @@ import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copi
 
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { notify, notifyError } from '../notify.js';
+import { getUsageSummary } from '../logger.js';
 import { initUsageTracker, endConversationAndGetSummary, setModelMultipliers } from '../usage-tracker.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
@@ -11,6 +12,24 @@ export type { ModelInfo };
 
 // 匯出 getModelMultiplier 以便 bot.ts 使用
 export { getModelMultiplier } from '../usage-tracker.js';
+
+/**
+ * 格式化毫秒時長為人類可讀格式
+ */
+function formatDuration(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes < 60) {
+        return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m`;
+}
 
 export interface ClientWithModels {
     client: CopilotClient;
@@ -86,11 +105,19 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 void notifyError(`Session 錯誤：${JSON.stringify(event.data)}`);
                 break;
             case 'session.idle':
-                // 結束對話並顯示用量摘要（不顯示「Session idle」）
-                const usageSummary = endConversationAndGetSummary();
-                if (usageSummary) {
-                    console.log('[Fairy] Conversation ended, sending usage summary');
-                    void notify(usageSummary);
+                // 結束對話並從 log/request.log 讀取用量摘要
+                endConversationAndGetSummary(); // 清理 UsageTracker 狀態
+                const summary = getUsageSummary();
+                if (summary.lastEntry) {
+                    const lastEntry = summary.lastEntry;
+                    const lines = [
+                        `📊 Premium Request 用量：`,
+                        `• Model: ${lastEntry.model} (${lastEntry.multiplier}x)`,
+                        `• 本次消耗: ${lastEntry.totalPremiumUsed} premium requests`,
+                        lastEntry.durationMs ? `• 處理時間: ${formatDuration(lastEntry.durationMs)}` : '',
+                        `• 累計消耗: ${summary.totalPremiumUsed} premium requests (${summary.totalRequests} 次請求)`
+                    ].filter(Boolean);
+                    void notify(lines.join('\n'));
                 }
                 break;
         }
