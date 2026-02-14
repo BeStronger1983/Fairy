@@ -79,7 +79,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 
         selectedModel = data.slice(MODEL_CALLBACK_PREFIX.length);
         console.log(`[Fairy] User selected model: ${selectedModel}`);
-        await notify(`使用者選擇了 model：${selectedModel}`);
+        writeLog(`User selected model: ${selectedModel}`);
 
         // answerCallbackQuery 可能因 query 過期而失敗（例如啟動時撿到舊 update），需容錯
         try {
@@ -88,22 +88,15 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             // callback query 過期，忽略
         }
 
-        // 讀取上次請求的消耗量
-        const lastUsage = getLastRequestUsage();
-        let usageInfo = '';
-        if (lastUsage) {
-            usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests`;
-        }
-
         try {
             await ctx.editMessageText(
                 `已選擇模型：${selectedModel} ✓\n\n` +
                 `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
-                `現在可以開始對話了！${usageInfo}`
+                `現在可以開始對話了！`
             );
         } catch {
             // 訊息已被編輯或刪除，改用直接發送
-            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！${usageInfo}`);
+            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！`);
         }
     });
 
@@ -267,6 +260,7 @@ async function sendTodolist(bot: Bot): Promise<void> {
 /**
  * 發送 model 選擇的 inline keyboard 按鈕給授權使用者
  * 每個按鈕顯示 model 名稱與 premium request multiplier
+ * 同時顯示上次請求的消耗量（如果有的話）
  */
 async function sendModelSelection(bot: Bot, models: ModelInfo[]): Promise<void> {
     const keyboard = new InlineKeyboard();
@@ -283,7 +277,14 @@ async function sendModelSelection(bot: Bot, models: ModelInfo[]): Promise<void> 
         return `• ${m.name} (${m.id}) - ${mult}x`;
     }).join('\n');
 
-    await bot.api.sendMessage(authorizedUserId, `Fairy 已啟動！請選擇要使用的 AI model：\n\n${modelList}`, {
+    // 讀取上次請求的消耗量
+    const lastUsage = getLastRequestUsage();
+    let usageInfo = '';
+    if (lastUsage) {
+        usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests (${lastUsage.model})`;
+    }
+
+    await bot.api.sendMessage(authorizedUserId, `Fairy 已啟動！請選擇要使用的 AI model：\n\n${modelList}${usageInfo}`, {
         reply_markup: keyboard
     });
 
