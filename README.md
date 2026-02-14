@@ -4,6 +4,12 @@ Fairy 是一個自主 AI Agent，使用 [GitHub Copilot CLI SDK](https://www.npm
 
 **只有你（授權使用者）能與 Fairy 對話**，所有其他人的訊息會被靜默忽略。
 
+## 支援平台
+
+- **macOS** ✓
+- **Linux** ✓
+- **Windows** ✓
+
 ## 功能
 
 - **Telegram 通訊** — 透過 Telegram Bot 接收指令、回覆結果
@@ -13,6 +19,7 @@ Fairy 是一個自主 AI Agent，使用 [GitHub Copilot CLI SDK](https://www.npm
 - **工具建立與重用** — 自動將新寫的工具存入 `tool/`，後續可重複使用
 - **記憶持久化** — 重要事項存入 `memory/`，不會遺忘
 - **日誌記錄** — 執行日誌與錯誤記錄寫入 `log/`
+- **跨平台支援** — 可在 macOS、Linux、Windows 上執行
 
 
 ## 前置需求
@@ -68,9 +75,11 @@ Fairy 需要兩個環境變數：
 | `TELEGRAM_BOT_TOKEN` | BotFather 給你的 Bot Token | `7123456789:AAH1234abcd...` |
 | `TELEGRAM_AUTHORIZED_USER_ID` | 你的 Telegram User ID（純數字） | `123456789` |
 
-設定方式（擇一）：
+設定方式依作業系統而異：
 
-**方式 A：直接 export**
+#### macOS / Linux
+
+**方式 A：直接 export（暫時）**
 
 ```bash
 export TELEGRAM_BOT_TOKEN="你的Bot Token"
@@ -92,12 +101,89 @@ TELEGRAM_AUTHORIZED_USER_ID=123456789
 source .env
 ```
 
+**方式 C：寫在 shell profile（永久）**
+
+將 export 語句加入 `~/.bashrc`、`~/.zshrc` 或其他 shell 設定檔：
+
+```bash
+echo 'export TELEGRAM_BOT_TOKEN="你的Bot Token"' >> ~/.zshrc
+echo 'export TELEGRAM_AUTHORIZED_USER_ID="你的User ID"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+#### Windows
+
+**方式 A：使用 PowerShell（暫時）**
+
+```powershell
+$env:TELEGRAM_BOT_TOKEN = "你的Bot Token"
+$env:TELEGRAM_AUTHORIZED_USER_ID = "你的User ID"
+```
+
+**方式 B：使用 CMD（暫時）**
+
+```cmd
+set TELEGRAM_BOT_TOKEN=你的Bot Token
+set TELEGRAM_AUTHORIZED_USER_ID=你的User ID
+```
+
+**方式 C：系統環境變數（永久）**
+
+1. 按下 `Win + R`，輸入 `sysdm.cpl` 按 Enter
+2. 選擇「進階」標籤，點擊「環境變數」
+3. 在「使用者變數」區塊，點擊「新增」
+4. 分別新增以下兩個變數：
+   - 變數名稱：`TELEGRAM_BOT_TOKEN`，變數值：你的 Bot Token
+   - 變數名稱：`TELEGRAM_AUTHORIZED_USER_ID`，變數值：你的 User ID
+5. 點擊「確定」儲存，重新開啟終端機
+
+**方式 D：使用 PowerShell 設定永久環境變數**
+
+```powershell
+[System.Environment]::SetEnvironmentVariable("TELEGRAM_BOT_TOKEN", "你的Bot Token", "User")
+[System.Environment]::SetEnvironmentVariable("TELEGRAM_AUTHORIZED_USER_ID", "你的User ID", "User")
+```
+
 > 請確保 `.env` 已加入 `.gitignore`，避免敏感資訊被提交。
 
 ## 啟動
 
+### 跨平台啟動（推薦）
+
+所有平台都可使用：
+
 ```bash
 npm start
+```
+
+這會執行 `start.js`，自動偵測作業系統並使用對應的方式啟動。
+
+### 平台專屬啟動
+
+#### macOS / Linux
+
+```bash
+# 方式 1：透過 npm
+npm start
+
+# 方式 2：直接執行 Bash 腳本
+./start.sh
+```
+
+#### Windows
+
+```cmd
+REM 方式 1：透過 npm
+npm start
+
+REM 方式 2：直接執行批次檔
+start.cmd
+```
+
+#### 開發模式（不自動重啟）
+
+```bash
+npm run start:dev
 ```
 
 啟動後你會看到類似以下的輸出：
@@ -125,6 +211,9 @@ Fairy/
 │   │   └── session.ts   # AI 核心 session 建立與事件訂閱
 │   └── telegram/
 │       └── bot.ts       # Telegram Bot 建立、權限控制、訊息處理
+├── start.js          # 跨平台啟動腳本（Node.js，推薦）
+├── start.sh          # macOS/Linux 啟動腳本（Bash）
+├── start.cmd         # Windows 啟動腳本（批次檔）
 ├── Fairy.md          # Fairy 的人設與行為設定
 ├── AGENTS.md         # Agent 開發指引
 ├── package.json      # 依賴管理
