@@ -88,15 +88,23 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             // callback query 過期，忽略
         }
 
+        // 讀取上次請求的消耗量
+        const lastUsage = getLastRequestUsage();
+        let usageInfo = '';
+        if (lastUsage) {
+            usageInfo = `\n\n📊 上次請求消耗：${lastUsage.totalPremiumUsed} premium requests (${lastUsage.model})`;
+        }
+
+        const messageText = 
+            `已選擇模型：${selectedModel} ✓\n\n` +
+            `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
+            `現在可以開始對話了！${usageInfo}`;
+
         try {
-            await ctx.editMessageText(
-                `已選擇模型：${selectedModel} ✓\n\n` +
-                `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
-                `現在可以開始對話了！`
-            );
+            await ctx.editMessageText(messageText);
         } catch {
             // 訊息已被編輯或刪除，改用直接發送
-            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！`);
+            await bot.api.sendMessage(authorizedUserId, messageText);
         }
     });
 
