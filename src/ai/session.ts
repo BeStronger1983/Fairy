@@ -3,6 +3,7 @@ import { CopilotClient, type CopilotSession, type ModelInfo } from '@github/copi
 import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { writeLog } from '../logger.js';
 import { getSubagentTools, setClientRef } from './subagent-tools.js';
+import { getToolManagerTools } from './tool-tools.js';
 
 export type { ModelInfo };
 
@@ -50,8 +51,8 @@ export async function createSession(client: CopilotClient, model: string): Promi
         },
         workingDirectory: PROJECT_ROOT,
         onPermissionRequest: async () => ({ kind: 'approved' as const }),
-        // 註冊 subagent 管理工具
-        tools: getSubagentTools()
+        // 註冊自訂工具：subagent 管理 + tool 管理
+        tools: [...getSubagentTools(), ...getToolManagerTools()]
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);
@@ -74,15 +75,4 @@ export async function createSession(client: CopilotClient, model: string): Promi
     });
 
     return session;
-}
-
-/**
- * 發送啟動確認訊息，驗證 session 是否正常運作
- */
-export async function verifySession(session: CopilotSession): Promise<void> {
-    const response = await session.sendAndWait({ prompt: '你已經啟動，請簡短回覆確認你是 Fairy。' }, 30_000);
-
-    if (response) {
-        console.log(`[Fairy] Boot confirmation: ${response.data.content}`);
-    }
 }

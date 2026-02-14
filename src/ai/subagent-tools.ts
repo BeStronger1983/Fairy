@@ -4,7 +4,7 @@
  * 提供給 AI 使用的工具，讓 AI 可以建立、查詢、使用 subagent
  * 這些工具會被註冊到 CopilotSession，讓 AI 能夠透過 tool call 來操作 subagent
  */
-import type { Tool, CopilotClient, CopilotSession } from '@github/copilot-sdk';
+import type { Tool, CopilotClient } from '@github/copilot-sdk';
 
 import {
     createSubagent,
@@ -16,6 +16,28 @@ import {
     type SubagentConfig
 } from './subagent.js';
 import { writeLog } from '../logger.js';
+
+// ---------- 工具參數型別定義 ----------
+
+interface CreateSubagentArgs {
+    description: string;
+    model: string;
+    systemPrompt: string;
+}
+
+interface SendToSubagentArgs {
+    subagentId: string;
+    message: string;
+    timeoutMs?: number;
+}
+
+interface FindSubagentsArgs {
+    description: string;
+}
+
+interface DestroySubagentArgs {
+    subagentId: string;
+}
 
 /** 儲存 client 參考，供工具使用 */
 let clientRef: CopilotClient | null = null;
@@ -33,7 +55,7 @@ export function setClientRef(client: CopilotClient): void {
  *
  * 讓 AI 可以建立新的 subagent，並自動儲存設定到 subagent 資料夾
  */
-const createSubagentTool: Tool = {
+const createSubagentTool: Tool<CreateSubagentArgs> = {
     name: 'create_subagent',
     description: `建立一個新的 subagent。Subagent 是專門處理特定任務的 AI agent，擁有自己的 systemPrompt 和 model。
 建立後的 subagent 設定會被儲存到 subagent 資料夾，之後可以重複使用。
@@ -56,7 +78,7 @@ const createSubagentTool: Tool = {
         },
         required: ['description', 'model', 'systemPrompt']
     },
-    handler: async (args: { description: string; model: string; systemPrompt: string }) => {
+    handler: async (args) => {
         if (!clientRef) {
             return { error: 'CopilotClient not initialized' };
         }
@@ -90,7 +112,7 @@ const createSubagentTool: Tool = {
  *
  * 讓 AI 可以向指定的 subagent 發送訊息並取得回應
  */
-const sendToSubagentTool: Tool = {
+const sendToSubagentTool: Tool<SendToSubagentArgs> = {
     name: 'send_to_subagent',
     description: `向指定的 subagent 發送訊息並等待回應。
 如果 subagent session 已失效，會自動根據儲存的設定重新建立。`,
@@ -112,7 +134,7 @@ const sendToSubagentTool: Tool = {
         },
         required: ['subagentId', 'message']
     },
-    handler: async (args: { subagentId: string; message: string; timeoutMs?: number }) => {
+    handler: async (args) => {
         if (!clientRef) {
             return { error: 'CopilotClient not initialized' };
         }
@@ -188,7 +210,7 @@ const listSubagentsTool: Tool = {
  *
  * 讓 AI 可以根據描述關鍵字搜尋適合重複使用的 subagent
  */
-const findSubagentsTool: Tool = {
+const findSubagentsTool: Tool<FindSubagentsArgs> = {
     name: 'find_subagents',
     description: '根據描述關鍵字搜尋相似的 subagent。可用於找到之前建立過的、適合當前任務的 subagent。',
     parameters: {
@@ -201,7 +223,7 @@ const findSubagentsTool: Tool = {
         },
         required: ['description']
     },
-    handler: async (args: { description: string }) => {
+    handler: async (args) => {
         try {
             const matches = findSimilarSubagents(args.description);
 
@@ -230,7 +252,7 @@ const findSubagentsTool: Tool = {
  *
  * 讓 AI 可以銷毀不再需要的 subagent session
  */
-const destroySubagentTool: Tool = {
+const destroySubagentTool: Tool<DestroySubagentArgs> = {
     name: 'destroy_subagent',
     description: '銷毀指定的 subagent session。設定檔會保留在 subagent 資料夾，之後仍可透過 send_to_subagent 重新建立。',
     parameters: {
@@ -243,7 +265,7 @@ const destroySubagentTool: Tool = {
         },
         required: ['subagentId']
     },
-    handler: async (args: { subagentId: string }) => {
+    handler: async (args) => {
         try {
             await destroySubagent(args.subagentId);
 
@@ -265,12 +287,12 @@ const destroySubagentTool: Tool = {
 /**
  * 取得所有 subagent 相關工具
  */
-export function getSubagentTools(): Tool[] {
+export function getSubagentTools(): Tool<unknown>[] {
     return [
-        createSubagentTool,
-        sendToSubagentTool,
+        createSubagentTool as Tool<unknown>,
+        sendToSubagentTool as Tool<unknown>,
         listSubagentsTool,
-        findSubagentsTool,
-        destroySubagentTool
+        findSubagentsTool as Tool<unknown>,
+        destroySubagentTool as Tool<unknown>
     ];
 }

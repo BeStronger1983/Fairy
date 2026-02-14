@@ -2,7 +2,7 @@ import { Bot, InlineKeyboard } from 'grammy';
 import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import type { ModelInfo } from '../ai/session.js';
-import { createSession, verifySession } from '../ai/session.js';
+import { createSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
 import { writeLog } from '../logger.js';
@@ -17,7 +17,8 @@ const MODEL_CALLBACK_PREFIX = 'model:';
  * 建立 Telegram Bot，掛載權限 middleware 與 model 選擇流程
  *
  * 啟動時先顯示可用 model 按鈕讓使用者選擇，
- * 選定後才建立 AI session 並進入正常訊息處理模式
+ * 選定 model 後不立即建立 session（節省 premium request），
+ * 等到第一次收到使用者訊息時才建立 session
  *
  * @returns bot 實例與一個 Promise，resolve 時附帶建立完成的 session
  */
@@ -36,6 +37,12 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
     // 保存 session 參考，建立前為 null
     let activeSession: CopilotSession | null = null;
 
+    // 保存選定的 model，選定後為字串，未選定為 null
+    let selectedModel: string | null = null;
+
+    // 標記是否正在建立 session（避免重複建立）
+    let isCreatingSession = false;
+
     // -------- 權限控制 middleware --------
     // 只允許授權使用者，其他人的訊息完全忽略、不回應
     bot.use(async (ctx, next) => {
@@ -48,38 +55,72 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
         await next();
     });
 
+    // -------- 全域錯誤處理 --------
+    bot.catch((err) => {
+        console.error('[Fairy] Bot error:', err.message);
+        writeLog(`Bot error: ${err.message}`);
+    });
+
     // -------- Model 選擇 callback 處理 --------
+    // 選定 model 後只記錄，不立即建立 session（節省 premium request）
     bot.on('callback_query:data', async (ctx) => {
         const data = ctx.callbackQuery.data;
         if (!data.startsWith(MODEL_CALLBACK_PREFIX)) return;
 
-        const selectedModel = data.slice(MODEL_CALLBACK_PREFIX.length);
+        selectedModel = data.slice(MODEL_CALLBACK_PREFIX.length);
         console.log(`[Fairy] User selected model: ${selectedModel}`);
         writeLog(`User selected model: ${selectedModel}`);
 
-        await ctx.answerCallbackQuery({ text: `已選擇 ${selectedModel}，正在建立 session…` });
-        await ctx.editMessageText(`已選擇模型：${selectedModel}\n正在建立 AI session…`);
+        // answerCallbackQuery 可能因 query 過期而失敗（例如啟動時撿到舊 update），需容錯
+        try {
+            await ctx.answerCallbackQuery({ text: `已選擇 ${selectedModel}` });
+        } catch {
+            // callback query 過期，忽略
+        }
 
         try {
-            const session = await createSession(client, selectedModel);
-            activeSession = session;
-
-            await verifySession(session);
-            await sendGreeting(bot, session);
-
-            resolveSession(session);
-        } catch (error) {
-            const errMsg = error instanceof Error ? error.message : String(error);
-            console.error('[Fairy] Failed to create session:', errMsg);
-            writeLog(`Failed to create session: ${errMsg}`);
-            await bot.api.sendMessage(authorizedUserId, `建立 session 失敗：${errMsg}`);
+            await ctx.editMessageText(
+                `已選擇模型：${selectedModel} ✓\n\n` +
+                `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
+                `現在可以開始對話了！`
+            );
+        } catch {
+            // 訊息已被編輯或刪除，改用直接發送
+            await bot.api.sendMessage(authorizedUserId, `已選擇模型：${selectedModel} ✓\n現在可以開始對話了！`);
         }
     });
 
     // -------- 文字訊息處理 --------
     bot.on('message:text', async (ctx) => {
-        if (!activeSession) {
+        // 尚未選擇 model
+        if (!selectedModel) {
             await ctx.reply('請先從上方按鈕選擇一個 model，我才能開始工作喔！');
+            return;
+        }
+
+        // Lazy session 初始化：第一次收到訊息時才建立 session
+        if (!activeSession && !isCreatingSession) {
+            isCreatingSession = true;
+            try {
+                await ctx.reply(`正在建立 AI session（使用 ${selectedModel}）…`);
+                const session = await createSession(client, selectedModel);
+                activeSession = session;
+                resolveSession(session);
+                console.log('[Fairy] Session created on first message');
+                writeLog('Session created on first message (lazy initialization)');
+            } catch (error) {
+                const errMsg = error instanceof Error ? error.message : String(error);
+                console.error('[Fairy] Failed to create session:', errMsg);
+                writeLog(`Failed to create session: ${errMsg}`);
+                await ctx.reply(`建立 session 失敗：${errMsg}`);
+                isCreatingSession = false;
+                return;
+            }
+        }
+
+        // 等待 session 建立完成（處理並發情況）
+        if (!activeSession) {
+            await ctx.reply('Session 正在建立中，請稍候…');
             return;
         }
 
@@ -138,6 +179,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
  */
 export function startBot(bot: Bot, models: ModelInfo[]): void {
     bot.start({
+        drop_pending_updates: true,
         onStart: async (botInfo) => {
             console.log(`[Fairy] Telegram Bot @${botInfo.username} started`);
             writeLog(`Telegram Bot @${botInfo.username} started. Authorized user: ${authorizedUserId}`);
@@ -181,26 +223,5 @@ async function sendLongMessage(bot: Bot, chatId: number, text: string): Promise<
 
     for (let i = 0; i < text.length; i += TELEGRAM_MSG_LIMIT) {
         await bot.api.sendMessage(chatId, text.slice(i, i + TELEGRAM_MSG_LIMIT));
-    }
-}
-
-/**
- * 讓 AI 產生問候語並傳送給主人；若失敗則發送靜態備用訊息
- */
-async function sendGreeting(bot: Bot, session: CopilotSession): Promise<void> {
-    try {
-        const greeting = await session.sendAndWait(
-            { prompt: '你剛剛啟動完成，請用簡短的方式跟主人打招呼。' },
-            30_000
-        );
-        const greetingText = greeting?.data.content ?? 'Fairy 已啟動！';
-        await bot.api.sendMessage(authorizedUserId, greetingText);
-        console.log(`[Fairy] Greeting sent: ${greetingText}`);
-        writeLog(`Greeting sent: ${greetingText}`);
-    } catch (error) {
-        const errMsg = error instanceof Error ? error.message : String(error);
-        console.error('[Fairy] Failed to send greeting:', errMsg);
-        writeLog(`Failed to send greeting: ${errMsg}`);
-        await bot.api.sendMessage(authorizedUserId, 'Fairy 已啟動！').catch(() => {});
     }
 }
