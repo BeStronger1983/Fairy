@@ -99,8 +99,8 @@ OpenClaw 支援多 agent 路由：
 - **Route Resolution**: 根據 channel + peer 解析目標 agent
 
 **適合 Fairy 的應用**:
-- Fairy 可實作 workspace 路由：不同 work/ 資料夾對應不同 subagent 設定
-- 根據訊息內容（如關鍵字）自動路由到合適的 subagent
+- Fairy 可實作 workspace 路由：不同 work/ 資料夾對應不同 Session 設定
+- 根據訊息內容（如關鍵字）自動路由到合適的 Session
 
 ---
 
@@ -126,7 +126,7 @@ interface HookDefinition {
 
 ---
 
-### 5. 🛠️ Subagent/Process 管理 (中優先)
+### 5. 🛠️ Session/Process 管理 (中優先)
 
 **來源**: `src/agents/bash-process-registry.ts`, `src/agents/subagent-registry.ts`
 
@@ -136,8 +136,8 @@ OpenClaw 的 process 管理設計：
 - **Process Actions**: list, poll, log, write, submit, send-keys, kill
 
 **適合 Fairy 的應用**:
-- 升級 Fairy 的 subagent 管理，加入 background process 追蹤
-- 可讓 subagent 執行長時間任務，定期回報進度
+- 升級 Fairy 的 Multi-Session 管理，加入 background process 追蹤
+- 可讓 Session 執行長時間任務，定期回報進度
 
 ---
 
@@ -158,7 +158,7 @@ bash pty:true workdir:~/project command:"codex exec 'Your prompt'"
 ```
 
 **適合 Fairy 的應用**:
-- Fairy 的 subagent 可整合外部 coding agent
+- Fairy 的 Session 可整合外部 coding agent
 - 特別是使用 GitHub Copilot CLI SDK，可與 Codex 協作
 
 ---
@@ -208,7 +208,7 @@ OpenClaw 的 session 設計：
 | Memory 系統 | `src/memory/manager.ts` |
 | Skills 載入 | `src/agents/skills.ts` |
 | Telegram Bot | `src/telegram/bot.ts` |
-| Subagent 管理 | `src/agents/subagent-registry.ts` |
+| Multi-Session 管理 | `src/agents/subagent-registry.ts`（OpenClaw 參考） |
 | Process 管理 | `src/agents/bash-process-registry.ts` |
 | Plugin SDK | `src/plugin-sdk/` |
 | Hooks | `src/hooks/hooks.ts` |

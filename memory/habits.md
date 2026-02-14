@@ -1,26 +1,25 @@
 # 重要工作習慣
 
-## Subagent vs Multiple Sessions 區分
+## Multiple Sessions vs Subagent 區分
 
-⚠️ **這兩個是不同的系統，要根據用戶用語來選擇：**
+⚠️ **這兩個是不同的系統，不要混淆：**
 
-| 用戶說的 | 使用的系統 | 工具/方法 |
-|----------|------------|-----------|
-| **「subagent」** | Copilot CLI 內建 | `create_subagent`, `send_to_subagent`, `destroy_subagent` |
-| **「Multiple Sessions」** | Fairy 程式功能 | `src/ai/subagent.ts` 的自訂工具 |
-| **沒有明說** | 自行判斷 | 根據任務特性選擇適合的系統 |
+| 術語 | 類型 | 工具/方法 | 程式碼位置 |
+|------|------|-----------|-----------|
+| **Multiple Sessions** | Fairy 自訂功能 | `create_session`, `send_to_session`, `destroy_session` | `src/ai/multi-session.ts` |
+| **Subagent** | Copilot CLI 內建 | `create_subagent`, `send_to_subagent`, `destroy_subagent` | Copilot CLI 內建 |
 
 ### 兩者差異
 
-- **Copilot CLI subagent**：CLI 環境下的 agent，追蹤由 GitHub 管理
-- **Fairy Multiple Sessions**：Fairy Bot 內部的多 session 管理，有 `request.log` 追蹤
+- **Fairy Multiple Sessions**：Fairy 自訂功能，透過 Copilot SDK 的 `createSession` 建立多個獨立的 CopilotSession。Session 設定存於 `session/` 資料夾，有 `request.log` 追蹤用量
+- **Copilot CLI Subagent**：Copilot CLI 內建功能，可在 Session 內使用
 
 ### ✅ 用量追蹤（已實作）
 
-Fairy Multiple Sessions 的 `send_to_subagent` 工具會：
-1. 追蹤每次 subagent 請求的用量
-2. 根據 subagent 的 model 計算正確的 multiplier
-3. 寫入 `request.log`（包含 subagentInfo）
+Fairy Multiple Sessions 的 `send_to_session` 工具會：
+1. 追蹤每次 Session 請求的用量
+2. 根據 Session 的 model 計算正確的 multiplier
+3. 寫入 `request.log`（包含 sessionInfo）
 4. 回傳用量資訊給呼叫者
 
 ## Git 版本控制
@@ -46,4 +45,4 @@ Fairy Multiple Sessions 的 `send_to_subagent` 工具會：
 
 ---
 建立日期：2026-02-14
-最後更新：2026-02-14
+最後更新：2026-02-15
