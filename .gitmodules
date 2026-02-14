@@ -1,0 +1,3 @@
+[submodule "reference/openclaw"]
+	path = reference/openclaw
+	url = git@github.com:openclaw/openclaw.git
