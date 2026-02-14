@@ -15,7 +15,7 @@ Fairy 是一個自主 AI Agent，使用 [GitHub Copilot CLI SDK](https://www.npm
 - **Telegram 通訊** — 透過 Telegram Bot 接收指令、回覆結果
 - **單一使用者存取控制** — 僅回應授權使用者，其他人的訊息完全忽略
 - **自我修改** — 能修改自身程式碼並重新啟動
-- **Subagent 管理** — 產生多個 subagent 並行處理工作
+- **Multiple Sessions** — 可建立多個獨立的 CopilotSession 並行處理工作（Fairy 自訂功能）
 - **工具建立與重用** — 自動將新寫的工具存入 `tool/`，後續可重複使用
 - **記憶持久化** — 重要事項存入 `memory/`，不會遺忘
 - **日誌記錄** — 執行日誌與錯誤記錄寫入 `log/`
@@ -211,10 +211,11 @@ Fairy/
 │   ├── logger.ts        # 日誌工具
 │   ├── skills.ts        # Skills 系統（Progressive Disclosure + 智慧匹配）
 │   ├── ai/
-│   │   ├── session.ts   # AI 核心 session 建立與事件訂閱
-│   │   ├── subagent.ts  # Subagent 管理
-│   │   ├── skill-tools.ts  # Skill 管理工具
-│   │   └── tool-tools.ts   # Tool 管理工具
+│   │   ├── session.ts        # AI 核心 session 建立與事件訂閱
+│   │   ├── multi-session.ts  # Multiple Sessions 管理（Fairy 自訂）
+│   │   ├── multi-session-tools.ts  # Multiple Sessions 工具
+│   │   ├── skill-tools.ts    # Skill 管理工具
+│   │   └── tool-tools.ts     # Tool 管理工具
 │   └── telegram/
 │       └── bot.ts       # Telegram Bot 建立、權限控制、訊息處理
 ├── .github/skills/   # Skills 定義（SKILL.md 格式）
@@ -227,9 +228,20 @@ Fairy/
 ├── tool/             # Fairy 自動建立的可重複使用工具（自動整合到 Skills）
 ├── memory/           # 重要事項的持久化儲存
 ├── log/              # 執行日誌與錯誤記錄
-├── subagent/         # Subagent 設定檔（每次啟動時清空，異動不觸發重啟）
-└── work/             # 放置你的 git repo，供 Fairy 的 subagent 協助處理
+├── session/          # Multiple Sessions 設定檔（每次啟動時清空，異動不觸發重啟）
+└── work/             # 放置你的 git repo，供 Fairy 的 Session 協助處理
 ```
+
+## 術語說明
+
+為避免混淆，以下是重要術語的定義：
+
+| 術語 | 說明 | 程式碼位置 |
+|------|------|-----------|
+| **Multiple Sessions** | Fairy 自訂功能：透過 Copilot SDK 的 `createSession` 建立多個獨立的 CopilotSession 來處理不同任務 | `src/ai/multi-session.ts` |
+| **Subagent** | Copilot CLI 內建功能：`create_subagent`, `send_to_subagent`, `destroy_subagent` 工具 | Copilot CLI 內建 |
+
+**重要**：這兩個概念是不同的功能，不要混淆！
 
 ## 存取控制機制
 
@@ -252,7 +264,7 @@ Fairy 的存取控制實作在 Telegram Bot 的 middleware 層：
 - `src/usage-tracker.ts`：Premium Request 用量追蹤
 - `src/file-snapshot.ts`：檔案快照與變更偵測，用於判斷是否需要重啟
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
-- `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
+- `src/ai/multi-session.ts`：Multiple Sessions 管理模組，負責建立、儲存、查詢、銷毀 Session
 - `src/ai/skill-tools.ts`：Skill 管理工具，供 AI 查詢、載入、使用 skills
 - `src/ai/tool-tools.ts`：Tool 管理工具，供 AI 儲存、執行工具
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候

@@ -49,7 +49,7 @@ interface ExecuteToolArgs {
 /**
  * 儲存新工具
  *
- * 讓 AI 可以將 subagent 寫的程式存到 tool 資料夾，並記錄到 memory
+ * 讓 AI 可以將寫好的程式存到 tool 資料夾，並記錄到 memory
  */
 const saveToolTool: Tool<SaveToolArgs> = {
     name: 'save_tool',

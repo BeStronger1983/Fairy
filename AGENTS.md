@@ -10,6 +10,19 @@ Fairy 是一個使用 GitHub Copilot CLI SDK（`@github/copilot-sdk`）建構的
 - **Session ID**: `fairy`
 - **Model**: `gpt-4.1`
 
+## 術語說明
+
+為避免混淆，以下是重要術語的定義：
+
+| 術語 | 說明 | 程式碼位置 |
+|------|------|-----------|
+| **Multiple Sessions** | Fairy 自訂功能：透過 Copilot SDK 的 `createSession` 建立多個獨立的 CopilotSession 來處理不同任務 | `src/ai/multi-session.ts` |
+| **Subagent** | Copilot CLI 內建功能：`create_subagent`, `send_to_subagent`, `destroy_subagent` 工具 | Copilot CLI 內建 |
+
+**重要**：這兩個概念是不同的功能，不要混淆！
+- Fairy 的 `create_session`, `send_to_session`, `destroy_session` 工具是 **Multiple Sessions** 功能
+- Copilot CLI 內建的 `create_subagent`, `send_to_subagent`, `destroy_subagent` 是 **Subagent** 功能
+
 ## Architecture
 
 ### 核心角色
@@ -28,15 +41,15 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 - `src/skills.ts`：Skills 系統模組，實作 Progressive Disclosure 三層載入
 - `src/usage-tracker.ts`：Premium Request 用量追蹤模組，記錄每次對話的消耗
 - `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
-- `src/ai/subagent.ts`：Subagent 管理模組，負責建立、儲存、查詢、銷毀 subagent
+- `src/ai/multi-session.ts`：Multiple Sessions 管理模組，負責建立、儲存、查詢、銷毀 Session
 - `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
 
 各模組職責分明，複雜邏輯皆有 zh-tw 註解，便於維護與擴充。
 
 1. **Telegram 通訊** — 透過 Telegram Bot API 接收與回覆訊息，僅回應唯一授權使用者，忽略所有其他人的指令
 2. **自我修改** — 能修改此專案的程式碼並重新啟動自身
-3. **Subagent 管理** — 可產生多個 subagent 進行並行工作，統整結果後透過 Telegram 回報；subagent 設定存於 `subagent/` 資料夾，每次程式啟動時清空。subagent 資料夾的異動不會觸發重啟
-4. **工具使用與建立** — 判斷工作適合用現成工具、撰寫新程式、或由 subagent 處理；新程式存於 `tool/` 資料夾供後續重複使用
+3. **Multiple Sessions 管理** — 可透過 Fairy 自訂的 Multiple Sessions 功能建立多個獨立的 CopilotSession 進行並行工作，統整結果後透過 Telegram 回報；Session 設定存於 `session/` 資料夾，每次程式啟動時清空。session 資料夾的異動不會觸發重啟
+4. **工具使用與建立** — 判斷工作適合用現成工具、撰寫新程式、或由 Session 處理；新程式存於 `tool/` 資料夾供後續重複使用
 5. **記憶管理** — Fairy 會把重要的事存在 `memory/` 資料夾裡，有需要的時候可以讀取，才不會忘記重要的事。使用 `src/memory.ts` 模組進行記憶的儲存、讀取、刪除與列表操作。**必須主動使用記憶功能**，包括：
    - 記錄 tool 資料夾中的工具，以便日後重複使用
    - 記錄重要的工作習慣與提醒
@@ -57,11 +70,11 @@ Fairy 是一個自主 AI Agent，具備以下核心能力：
 Fairy/
 ├── src/              # 原始碼
 │   └── ai/           # AI 相關模組
-│       ├── session.ts      # Session 管理
-│       ├── subagent.ts     # Subagent 管理
-│       ├── subagent-tools.ts # Subagent 工具
-│       ├── tool-tools.ts   # Tool 管理工具
-│       └── skill-tools.ts  # Skill 管理工具
+│       ├── session.ts           # Session 管理
+│       ├── multi-session.ts     # Multiple Sessions 管理（Fairy 自訂）
+│       ├── multi-session-tools.ts # Multiple Sessions 工具
+│       ├── tool-tools.ts        # Tool 管理工具
+│       └── skill-tools.ts       # Skill 管理工具
 ├── .github/skills/   # Skills 定義（SKILL.md 格式）
 ├── Fairy.md          # Fairy 的設定與說明
 ├── AGENTS.md         # 本檔案：Agent 行為指引
@@ -69,8 +82,8 @@ Fairy/
 ├── tool/             # Fairy 自行撰寫的可重複使用工具（自動整合到 Skills）
 ├── memory/           # 重要事項的持久化儲存
 ├── log/              # 執行日誌與錯誤記錄
-├── subagent/         # Subagent 設定檔（每次啟動時清空，異動不觸發重啟）
-└── work/             # 使用者的 git repo，供 subagent 協助處理工作
+├── session/          # Multiple Sessions 設定檔（每次啟動時清空，異動不觸發重啟）
+└── work/             # 使用者的 git repo，供 Session 協助處理工作
 ```
 
 ## Coding Guidelines
@@ -108,7 +121,7 @@ Fairy/
 
 1. **現成工具** — 檢查 `tool/` 資料夾中是否有適合的既有工具
 2. **撰寫新工具** — 若無現成工具，撰寫新程式並存入 `tool/`
-3. **Subagent** — 若工作需要並行處理或涉及 `work/` 中的 git repo，產生 subagent 處理
+3. **Multiple Sessions** — 若工作需要並行處理或涉及 `work/` 中的 git repo，使用 Multiple Sessions 功能建立獨立的 CopilotSession 處理
 4. **系統工具** — 需要時可透過 homebrew 安裝合適的系統工具
 
 處理完成後，透過 Telegram Bot API 將結果回報給使用者。

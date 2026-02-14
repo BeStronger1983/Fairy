@@ -4,7 +4,7 @@ import { SESSION_ID, systemPrompt, PROJECT_ROOT } from '../config.js';
 import { notify, notifyError } from '../notify.js';
 import { getUsageSummary } from '../logger.js';
 import { initUsageTracker, endConversationAndGetSummary, setModelMultipliers } from '../usage-tracker.js';
-import { getSubagentTools, setClientRef } from './subagent-tools.js';
+import { getMultiSessionTools, setClientRef } from './multi-session-tools.js';
 import { getToolManagerTools } from './tool-tools.js';
 import { getSkillTools } from './skill-tools.js';
 
@@ -64,10 +64,10 @@ export async function startClient(): Promise<ClientWithModels> {
  * - 使用 Fairy.md 作為 system prompt（完全取代預設提示）
  * - workingDirectory 設為專案根目錄，讓 AI 能操作檔案
  * - onPermissionRequest 自動核准所有操作（Fairy 是受信任的自主 Agent）
- * - 註冊 subagent 相關工具，讓 AI 可以建立、管理 subagent
+ * - 註冊 Multi-Session 相關工具，讓 AI 可以建立、管理多個 Session
  */
 export async function createSession(client: CopilotClient, model: string): Promise<CopilotSession> {
-    // 設定 client 參考，供 subagent 工具使用
+    // 設定 client 參考，供 Multi-Session 工具使用
     setClientRef(client);
 
     // 初始化 usage tracker
@@ -83,8 +83,8 @@ export async function createSession(client: CopilotClient, model: string): Promi
         },
         workingDirectory: PROJECT_ROOT,
         onPermissionRequest: async () => ({ kind: 'approved' as const }),
-        // 註冊自訂工具：subagent 管理 + tool 管理 + skill 管理
-        tools: [...getSubagentTools(), ...getToolManagerTools(), ...getSkillTools()]
+        // 註冊自訂工具：Multi-Session 管理 + Tool 管理 + Skill 管理
+        tools: [...getMultiSessionTools(), ...getToolManagerTools(), ...getSkillTools()]
     });
 
     console.log(`[Fairy] Session "${SESSION_ID}" created with model ${model}`);

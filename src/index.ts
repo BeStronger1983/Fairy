@@ -1,7 +1,7 @@
 import { notify, notifyError } from './notify.js';
 import { startClient } from './ai/session.js';
 import { createBot, startBot } from './telegram/bot.js';
-import { clearSubagentFolder, destroyAllSubagents } from './ai/subagent.js';
+import { clearSessionFolder, destroyAllSessions } from './ai/multi-session.js';
 import { syncToolsWithMemory } from './tool-manager.js';
 import { getMemoryManager, closeMemoryManager } from './memory/index.js';
 import { log } from './logger.js';
@@ -12,8 +12,8 @@ async function main(): Promise<void> {
     console.log('[Fairy] Initializing…');
     await notify('Fairy 初始化中…');
 
-    // 1. 清空 subagent 資料夾（每次啟動時重置）
-    clearSubagentFolder();
+    // 1. 清空 session 資料夾（每次啟動時重置）
+    clearSessionFolder();
 
     // 2. 同步 tool 資料夾與 memory（確保工具都有記錄）
     syncToolsWithMemory();
@@ -53,7 +53,7 @@ async function main(): Promise<void> {
         console.log('\n[Fairy] Shutting down…');
         await notify('Fairy 正在關閉…');
         bot.stop();
-        await destroyAllSubagents();
+        await destroyAllSessions();
         closeMemoryManager();  // 關閉記憶系統
 
         // session 可能尚未建立（lazy initialization），需要檢查

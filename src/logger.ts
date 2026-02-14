@@ -15,7 +15,8 @@ export interface RequestLogEntry {
   userMessage: string;
   model: string;
   multiplier: number;
-  subagentInfo?: { id: string; model: string; requests: number; premiumUsed: number }[];
+  /** Multi-Session 用量資訊（Fairy 自訂的 Multiple Sessions 功能） */
+  sessionInfo?: { id: string; model: string; requests: number; premiumUsed: number }[];
   totalPremiumUsed: number;
   durationMs?: number;
 }
