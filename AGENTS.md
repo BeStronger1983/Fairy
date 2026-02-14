@@ -6,7 +6,7 @@ Fairy 是一個使用 GitHub Copilot CLI SDK（`@github/copilot-sdk`）建構的
 
 - **Runtime**: Node.js（TypeScript，使用 `tsx` 執行）
 - **Module System**: ESM（`"type": "module"`）
-- **Entry Point**: `index.ts`
+- **Entry Point**: `src/index.ts`
 - **Session ID**: `fairy`
 - **Model**: `gpt-4.1`
 
@@ -15,6 +15,18 @@ Fairy 是一個使用 GitHub Copilot CLI SDK（`@github/copilot-sdk`）建構的
 ### 核心角色
 
 Fairy 是一個自主 AI Agent，具備以下核心能力：
+
+### 原始碼模組化說明
+
+自 2026/02/14 起，Fairy 採用 src/ 目錄下多檔案模組化設計：
+
+- `src/index.ts`：主程式入口，負責啟動流程與優雅關閉
+- `src/config.ts`：環境變數、常數、system prompt 載入
+- `src/logger.ts`：日誌寫入工具
+- `src/ai/session.ts`：AI 核心 session 建立、事件訂閱、啟動驗證
+- `src/telegram/bot.ts`：Telegram Bot 建立、權限 middleware、訊息處理、問候
+
+各模組職責分明，複雜邏輯皆有 zh-tw 註解，便於維護與擴充。
 
 1. **Telegram 通訊** — 透過 Telegram Bot API 接收與回覆訊息，僅回應唯一授權使用者，忽略所有其他人的指令
 2. **自我修改** — 能修改此專案的程式碼並重新啟動自身
@@ -72,3 +84,7 @@ Fairy/
 4. **系統工具** — 需要時可透過 homebrew 安裝合適的系統工具
 
 處理完成後，透過 Telegram Bot API 將結果回報給使用者。
+
+## Code Simplification Requirement
+
+每次修改程式碼時，必須使用 code-simplifier skill（見 .github/skills/code-simplifier/SKILL.md）進行精簡與規範化，確保所有程式皆符合專案最佳實踐與維護性標準。
