@@ -4,12 +4,12 @@ import { resolve } from 'node:path';
 import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import type { ModelInfo } from '../ai/session.js';
-import { createSession } from '../ai/session.js';
+import { createSession, getModelMultiplier as getMultiplierFromSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
-import { writeLog } from '../logger.js';
+import { writeLog, writeRequestLog } from '../logger.js';
 import { notify, notifyError, setBotRef, markBotStarted } from '../notify.js';
-import { recordRequest } from '../usage-tracker.js';
+import { recordRequest, getUsageTracker, getModelMultiplier } from '../usage-tracker.js';
 
 /** Telegram 單則訊息字數上限 */
 const TELEGRAM_MSG_LIMIT = 4096;
@@ -151,7 +151,25 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             // 記錄 premium request 使用
             recordRequest();
 
+            // 記錄此次請求到 log
+            writeLog(`Received request: ${userMessage.slice(0, 100)}…`);
+
             const aiResponse = await activeSession.sendAndWait({ prompt: userMessage }, 300_000);
+
+            // 取得用量追蹤器，準備寫入結構化 log
+            const tracker = getUsageTracker();
+            if (tracker) {
+                const usage = tracker.getCurrentUsage();
+                if (usage) {
+                    writeRequestLog({
+                        timestamp: new Date().toISOString(),
+                        userMessage,
+                        model: tracker.model,
+                        multiplier: tracker.multiplier,
+                        totalPremiumUsed: usage.premiumRequestsUsed
+                    });
+                }
+            }
 
             if (aiResponse) {
                 const replyText = aiResponse.data.content;
@@ -241,16 +259,22 @@ async function sendTodolist(bot: Bot): Promise<void> {
 
 /**
  * 發送 model 選擇的 inline keyboard 按鈕給授權使用者
+ * 每個按鈕顯示 model 名稱與 premium request multiplier
  */
 async function sendModelSelection(bot: Bot, models: ModelInfo[]): Promise<void> {
     const keyboard = new InlineKeyboard();
 
-    // 每個 model 一行一個按鈕
+    // 每個 model 一行一個按鈕，顯示 multiplier
     for (const model of models) {
-        keyboard.text(model.name, `${MODEL_CALLBACK_PREFIX}${model.id}`).row();
+        const multiplier = getModelMultiplier(model.id);
+        const buttonText = `${model.id} (${multiplier}x)`;
+        keyboard.text(buttonText, `${MODEL_CALLBACK_PREFIX}${model.id}`).row();
     }
 
-    const modelList = models.map((m) => `• ${m.name} (${m.id})`).join('\n');
+    const modelList = models.map((m) => {
+        const mult = getModelMultiplier(m.id);
+        return `• ${m.name} (${m.id}) - ${mult}x`;
+    }).join('\n');
 
     await bot.api.sendMessage(authorizedUserId, `Fairy 已啟動！請選擇要使用的 AI model：\n\n${modelList}`, {
         reply_markup: keyboard

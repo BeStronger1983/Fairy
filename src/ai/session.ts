@@ -9,6 +9,9 @@ import { getSkillTools } from './skill-tools.js';
 
 export type { ModelInfo };
 
+// 匯出 getModelMultiplier 以便 bot.ts 使用
+export { getModelMultiplier } from '../usage-tracker.js';
+
 export interface ClientWithModels {
     client: CopilotClient;
     models: ModelInfo[];
@@ -80,12 +83,10 @@ export async function createSession(client: CopilotClient, model: string): Promi
                 break;
             case 'session.idle':
                 console.log('[Fairy] Session idle');
-                // 結束對話並顯示用量摘要
+                // 結束對話並顯示用量摘要（不再顯示「💤 Session idle」）
                 const usageSummary = endConversationAndGetSummary();
                 if (usageSummary) {
-                    void notify(`💤 Session idle\n\n${usageSummary}`);
-                } else {
-                    void notify('💤 Session idle');
+                    void notify(usageSummary);
                 }
                 break;
         }
