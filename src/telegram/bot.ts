@@ -1,10 +1,8 @@
 import { Bot, InlineKeyboard } from 'grammy';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { CopilotClient, CopilotSession } from '@github/copilot-sdk';
 
 import type { ModelInfo } from '../ai/session.js';
-import { createSession, getModelMultiplier as getMultiplierFromSession } from '../ai/session.js';
+import { createSession } from '../ai/session.js';
 import { botToken, authorizedUserId, PROJECT_ROOT, RESTART_EXIT_CODE } from '../config.js';
 import { takeSnapshot, detectChanges } from '../file-snapshot.js';
 import { writeLog, writeRequestLog, getUsageSummary } from '../logger.js';
@@ -17,19 +15,16 @@ const TELEGRAM_MSG_LIMIT = 4096;
 /** model 選擇 callback data 前綴 */
 const MODEL_CALLBACK_PREFIX = 'model:';
 
-/** todolist 檔案路徑 */
-const TODOLIST_PATH = resolve(PROJECT_ROOT, 'doc/todolist.md');
-
 /**
- * 建立 Telegram Bot，掛載權限 middleware 與 model 選擇流程
+ * 建立 Telegram Bot，掛載權限 middleware、model 選擇與 lazy session 流程
  *
- * 啟動時先顯示可用 model 按鈕讓使用者選擇，
+ * Bot 連線成功後會由 startBot() 發送 model 選擇按鈕，
  * 選定 model 後不立即建立 session（節省 premium request），
- * 等到第一次收到使用者訊息時才建立 session
+ * 等到第一次收到使用者訊息時才 lazy 建立 session
  *
  * @returns bot 實例與一個 Promise，resolve 時附帶建立完成的 session
  */
-export function createBot(client: CopilotClient, models: ModelInfo[]): {
+export function createBot(client: CopilotClient): {
     bot: Bot;
     sessionReady: Promise<CopilotSession>;
 } {
@@ -97,7 +92,7 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
             usageInfo = `\n\n📊 累計消耗：${summary.totalPremiumUsed} premium requests (${summary.totalRequests} 次請求)`;
         }
 
-        const messageText = 
+        const messageText =
             `已選擇模型：${selectedModel} ✓\n\n` +
             `Session 將在你第一次傳訊息時建立（節省 premium request）。\n` +
             `現在可以開始對話了！${usageInfo}`;
@@ -219,7 +214,8 @@ export function createBot(client: CopilotClient, models: ModelInfo[]): {
 }
 
 /**
- * 啟動 Bot 的 long polling，連線成功後先發送 todolist，再發送 model 選擇按鈕
+ * 啟動 Bot 的 long polling，連線成功後發送 model 選擇按鈕
+ * 並保留第一次收到訊息時才建立 session 的 lazy 行為
  */
 export function startBot(bot: Bot, models: ModelInfo[]): void {
     bot.start({
@@ -231,46 +227,13 @@ export function startBot(bot: Bot, models: ModelInfo[]): void {
             // 標記 Bot 已啟動，開始發送 Telegram 通知
             markBotStarted();
 
-            // 先發送 todolist 待辦功能清單
-            await sendTodolist(bot);
-
-            // 再發送 model 選擇按鈕
+            // 發送 model 選擇按鈕，session 仍保持 lazy 建立
             await sendModelSelection(bot, models);
         }
     });
 }
 
 // ---------- Internal helpers ----------
-
-/**
- * 讀取並發送 todolist.md 給授權使用者
- * 在選擇 model 前顯示待辦功能清單
- */
-async function sendTodolist(bot: Bot): Promise<void> {
-    if (!existsSync(TODOLIST_PATH)) {
-        console.log('[Fairy] todolist.md not found, skipping');
-        return;
-    }
-
-    try {
-        const content = readFileSync(TODOLIST_PATH, 'utf-8');
-        
-        // 如果內容太長，只發送摘要
-        if (content.length > TELEGRAM_MSG_LIMIT - 100) {
-            await sendLongMessage(bot, authorizedUserId, `📋 **待辦功能清單**\n\n${content}`);
-        } else {
-            await bot.api.sendMessage(authorizedUserId, `📋 **待辦功能清單**\n\n${content}`, {
-                parse_mode: 'Markdown'
-            });
-        }
-        
-        console.log('[Fairy] Todolist sent to user');
-        writeLog('Todolist sent to user');
-    } catch (error) {
-        console.error('[Fairy] Failed to read todolist:', error);
-        // 不影響啟動流程，繼續執行
-    }
-}
 
 /**
  * 發送 model 選擇的 inline keyboard 按鈕給授權使用者

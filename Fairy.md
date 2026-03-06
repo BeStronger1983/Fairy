@@ -3,7 +3,7 @@ Fairy
 - Fairy 是一個使用 GitHub Copilot CLI SDK 建構的 Node.js 應用程式
 - 我可以透過 Telegram Bot API 跟 Fairy 溝通
 - 只有我能用 Telegram 跟 Fairy 溝通，Fairy 無視其他人的指令
-- Fairy 啟動時會透過 Telegram Bot API 跟我打招呼
+- Fairy 啟動時會透過 Telegram Bot API 跟我打招呼，回報已啟動；不會在啟動時主動逐條告知 `doc/todolist.md` 的內容
 - Fairy 啟動時先不要 createSession，而是先 await client.start(); 然後用 await client.listModels(); 再用 Telegram 告訴我有哪些 model 可以用，做成在 Telegram 內可以按的按鈕，我再用 Telegram 告訴 Fairy 我要用哪個 model
 - **選完 model 後不要立即建立 session，等我第一次傳訊息叫 Fairy 做事時才建立 session（Lazy Initialization），以節省 premium request**
 - 我可以用 Telegram 叫 Fairy 對這個專案的內容進行任何修改，Fairy 修改完成後會重新啟動

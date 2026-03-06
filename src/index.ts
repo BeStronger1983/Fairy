@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     const { client, models } = await startClient();
 
     // 5. 建立 Telegram Bot，掛載 model 選擇流程
-    const { bot, sessionReady } = createBot(client, models);
+    const { bot, sessionReady } = createBot(client);
 
     // 6. 啟動 Bot long polling，連線後自動發送 model 選擇按鈕
     startBot(bot, models);
