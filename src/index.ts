@@ -48,38 +48,55 @@ async function main(): Promise<void> {
     // 通知使用者程式已就緒（會在 Bot 連線成功後才實際發送）
     await notify('Fairy 啟動完成，等待選擇 model 與第一則訊息');
 
-    // 8. 優雅關閉：收到終止信號時依序釋放資源
-    const shutdown = async (): Promise<void> => {
-        console.log('\n[Fairy] Shutting down…');
-        await notify('Fairy 正在關閉…');
-        bot.stop();
-        await destroyAllSessions();
-        closeMemoryManager();  // 關閉記憶系統
-
-        // session 可能尚未建立（lazy initialization），需要檢查
+    const waitForLazySession = async (): Promise<Awaited<typeof sessionReady> | null> => {
         try {
-            // 使用 Promise.race 避免永久等待尚未建立的 session
-            const session = await Promise.race([
+            return await Promise.race([
                 sessionReady,
                 new Promise<null>((resolve) => setTimeout(() => resolve(null), 100))
             ]);
+        } catch {
+            return null;
+        }
+    };
+
+    // 8. 優雅關閉：收到終止信號時依序釋放資源
+    let shutdownPromise: Promise<void> | null = null;
+    const shutdown = (signal: NodeJS.Signals): Promise<void> => {
+        if (shutdownPromise) {
+            log.info(`Shutdown already in progress, ignored ${signal}`);
+            return shutdownPromise;
+        }
+
+        shutdownPromise = (async () => {
+            console.log(`\n[Fairy] Shutting down (${signal})…`);
+            await notify('Fairy 正在關閉…');
+            await bot.stop();
+            await destroyAllSessions();
+            closeMemoryManager();  // 關閉記憶系統
+
+            // session 可能尚未建立（lazy initialization），需要檢查
+            const session = await waitForLazySession();
             if (session) {
                 await session.destroy();
             }
-        } catch {
-            // session 尚未建立，忽略
-        }
 
-        const errors = await client.stop();
-        if (errors.length > 0) {
-            console.error('[Fairy] Cleanup errors:', errors);
-            await notifyError(`清理資源時發生錯誤：${JSON.stringify(errors)}`);
-        }
-        process.exit(0);
+            const errors = await client.stop();
+            if (errors.length > 0) {
+                console.error('[Fairy] Cleanup errors:', errors);
+                await notifyError(`清理資源時發生錯誤：${JSON.stringify(errors)}`);
+            }
+            process.exit(0);
+        })();
+
+        return shutdownPromise;
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    process.once('SIGINT', () => {
+        void shutdown('SIGINT');
+    });
+    process.once('SIGTERM', () => {
+        void shutdown('SIGTERM');
+    });
 }
 
 main().catch(async (err) => {
